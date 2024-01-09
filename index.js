@@ -3,43 +3,43 @@
 const fs = require('fs');
 const path = require('path');
 
-function generatePage(pageName) {
+function generatePage(sliceName) {
   const pageTemplate = `
     import React from 'react';
 
-    const ${pageName} = () => {
+    const ${sliceName} = () => {
       // Your page code here
       return (
         <div>
-          <h1>${pageName} Page</h1>
+          <h1>${sliceName} Page</h1>
         </div>
       );
     };
 
-    export default ${pageName};
+    export default ${sliceName};
   `;
 
-  const pagePath = path.join('src', 'pages', pageName, 'index.tsx');
+  const pagePath = path.join('src', 'pages', sliceName, 'index.tsx');
 
-  fs.mkdirSync(path.join('src', 'pages', pageName), { recursive: true });
+  fs.mkdirSync(path.join('src', 'pages', sliceName), { recursive: true });
   fs.writeFileSync(pagePath, pageTemplate, 'utf-8');
 
-  console.log(`Page '${pageName}' created at ${pagePath}`);
+  console.log(`Page '${sliceName}' created at ${pagePath}`);
 }
 
-function generateFiles(pageName, flags) {
+function generateFiles(sliceName, flags) {
   flags.forEach(arg => {
     arg.split(',').forEach(flag=>{
         console.log(flag);  
         switch (flag) {
             case 'e':
-              generateEntity(pageName);
+              generateEntity(sliceName);
               break;
             case 'f':
-              generateFeature(pageName);
+              generateFeature(sliceName);
               break;
             case 'w':
-              generateWidget(pageName);
+              generateWidget(sliceName);
               break;
             // Add additional cases for other flags as needed
             // ...
@@ -47,68 +47,67 @@ function generateFiles(pageName, flags) {
     })
   });
 
-  console.log(`Files for '${pageName}' generated successfully.`);
+  console.log(`Files for '${sliceName}' generated successfully.`);
 }
 
-function generateEntity(pageName) {
-  const entitiesPath = path.join('src', 'entities');
+function generateEntity(sliceName) {
+  const entitiesPath = path.join('src', `entities/${sliceName}`);
   fs.mkdirSync(entitiesPath, { recursive: true });
 
   const entityTemplate = `
-    export interface ${pageName}Entity {
-      // Define your entity properties here
+    export const ${sliceName} = ()=> {
+      return <div> ${sliceName} entity</div>
     }
   `;
 
-  const entityFilePath = path.join(entitiesPath, `${pageName}Entity.ts`);
+  const entityFilePath = path.join(entitiesPath, `index.tsx`);
   fs.writeFileSync(entityFilePath, entityTemplate, 'utf-8');
 
-  console.log(`Entity for '${pageName}' generated at ${entityFilePath}`);
+  console.log(`Entity for '${sliceName}' generated at ${entityFilePath}`);
 }
 
-function generateFeature(pageName) {
-  const featuresPath = path.join('src', 'features');
+function generateFeature(sliceName) {
+  const featuresPath = path.join('src', `features/${sliceName}`);
   fs.mkdirSync(featuresPath, { recursive: true });
 
   const featureTemplate = `
-    export interface ${pageName}feature {
-      // Define your feature properties here
-    }
-  `;
+  export const ${sliceName} = ()=> {
+    return <div> ${sliceName} feature</div>
+  }
+`;
 
-  const featureFilePath = path.join(featuresPath, `${pageName}feature.ts`);
+  const featureFilePath = path.join(featuresPath, 'index.tsx');
   fs.writeFileSync(featureFilePath, featureTemplate, 'utf-8');
 
-  console.log(`Entity for '${pageName}' generated at ${featureFilePath}`);
+  console.log(`Entity for '${sliceName}' generated at ${featureFilePath}`);
 }
 
-function generateWidget(pageName) {
-  const widgetsPath = path.join('src', 'widgets');
+function generateWidget(sliceName) {
+  const widgetsPath = path.join('src', `widgets/${sliceName}`);
   fs.mkdirSync(widgetsPath, { recursive: true });
 
   const widgetTemplate = `
-    export interface ${pageName}widget {
-      // Define your widget properties here
-    }
-  `;
+  export const ${sliceName} = ()=> {
+    return <div> ${sliceName} widget</div>
+  }
+`;
 
-  const widgetFilePath = path.join(widgetsPath, `${pageName}widget.ts`);
+  const widgetFilePath = path.join(widgetsPath, `index.tsx`);
   fs.writeFileSync(widgetFilePath, widgetTemplate, 'utf-8');
 
-  console.log(`widget for '${pageName}' generated at ${widgetFilePath}`);
+  console.log(`widget for '${sliceName}' generated at ${widgetFilePath}`);
 }
 
 // Usage example:
 const what = process.argv[2]
-const pageName = process.argv[3];
-console.log(what+"-------"+pageName);
+const sliceName = process.argv[3];
 const flags = process.argv.slice(3);
 
-if (!pageName) {
+if (!sliceName) {
   console.error('Please provide a page name.');
   process.exit(1);
 }
 
-generatePage(pageName);
-generateFiles(pageName, flags);
+generatePage(sliceName);
+generateFiles(sliceName, flags);
 
