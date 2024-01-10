@@ -3,7 +3,9 @@
   "version": "1.6.0",
   "description": "",
   "main": "./src/index.js",
+  "type": "commonjs",
   "scripts": {
+    "build": "tsup src/index.ts --format esm --clean",
     "test": "echo \"Error: no test specified\" && exit 1",
     "lint-staged": "npx lint-staged",
     "prettier-fix": "npx prettier --write .",
@@ -21,13 +23,21 @@
     }
   },
   "bin": {
-    "iwant": "./src/index.js"
+    "iwant": "./dist/index.js"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com:tahir-kali/iwant-fsd-cli.git"
   },
-  "keywords": [],
+  "keywords": [
+    "feature-sliced",
+    "cli",
+    "generator",
+    "folders",
+    "layers",
+    "slices",
+    "segments"
+  ],
   "author": "Codeholic",
   "license": "ISC",
   "homepage": "git+https://github.com:tahir-kali/iwant-fsd-cli.git#README",
@@ -39,8 +49,6 @@
     "@types/react": "^18.2.15",
     "@types/react-dom": "^18.2.7",
     "@types/uuid": "^9.0.2",
-    "@typescript-eslint/eslint-plugin": "^6.7.3",
-    "@typescript-eslint/parser": "^6.7.3",
     "@vitejs/plugin-react-swc": "^3.3.2",
     "clsx": "^2.0.0",
     "eslint": "^8.56.0",
@@ -55,12 +63,26 @@
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.3",
     "eslint-plugin-unused-imports": "^3.0.0",
+    "@tsconfig/recommended": "^1.0.3",
+    "@types/mock-fs": "^4.13.4",
+    "@types/node": "^20.10.2",
+    "tsup": "^8.0.1",
+    "typescript": "^5.3.2",
+    "@typescript-eslint/eslint-plugin": "^6.13.1",
+    "@typescript-eslint/parser": "^6.13.1",
     "prettier": "^3.0.1",
     "prettier-eslint": "^15.0.1",
     "sass-loader": "^13.3.2",
     "stylelint-prettier": "^4.0.2",
     "tailwindcss": "^3.3.3",
-    "typescript": "^5.0.2",
-    "vite": "^4.4.5"
-  }
+    "mock-fs": "^5.2.0",
+    "vitest": "^0.34.6"
+  },
+  "files": [
+    "dist",
+    "src",
+    "README.md",
+    "LICENSE",
+    "package.json"
+  ]
 }

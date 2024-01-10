@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 
-const fs = require('fs')
-const path = require('path')
-const { sliceTemplate, pageTemplate } = require('./templates.js')
-const { toPascalCase, toCamelCase, toKebabCase } = require('./helpers.js')
+import fs from 'node:fs'
+import { join } from 'node:path'
+import process from 'node:process'
+import { sliceTemplate, pageTemplate } from './templates.js'
+import { toPascalCase, toCamelCase, toKebabCase } from './helpers.js'
 // All constants start
 
 const slices = {
@@ -22,17 +23,21 @@ const slices = {
 // All functions start
 
 const generatePage = (sliceName) => {
-  const pagePath = path.join('src', 'pages', sliceName, 'index.tsx')
+  const pagePath = join('src', 'pages', sliceName, 'index.tsx')
   if (sliceExists(pagePath)) {
     return
   }
-  fs.mkdirSync(path.join('src', 'pages', sliceName), { recursive: true })
+  fs.mkdirSync(join('src', 'pages', sliceName), { recursive: true })
   fs.writeFileSync(pagePath, pageTemplate(sliceName), 'utf-8')
   updateIndexFile('pages', toPascalCase(sliceName))
   console.log(`Page '${toPascalCase(sliceName)}' created at ${pagePath}`)
 }
 
-const generateSegments = (sliceName, segments, args = null) => {
+const generateSegments = (
+  sliceName: string,
+  segments: string[],
+  args: string[] | null = null
+) => {
   segments[0].split(',').forEach((flag) => {
     if (
       Object.values(slices).includes(flag) ||
@@ -47,14 +52,17 @@ const generateSegments = (sliceName, segments, args = null) => {
 const createSegment = (slice, sliceName, layer, args) => {
   let layerPath = ''
   if (layer !== null) {
-    layerPath = path.join(`${slice}/${sliceName}/${layer}`)
+    layerPath = join(`${slice}/${sliceName}/${layer}`)
   } else {
-    layerPath = path.join(`${slice}/${sliceName}`)
+    layerPath = join(`${slice}/${sliceName}`)
   }
-  layerPath = path.join('src', layerPath)
+  layerPath = join('src', layerPath)
   fs.mkdirSync(layerPath, { recursive: true })
 
-  const slicePath = path.join(layerPath, `index.tsx`)
+  const slicePath = join(
+    layerPath,
+    ['ui', null].includes(layer) ? `index.tsx` : 'index.ts'
+  )
 
   if (sliceExists(slicePath)) {
     return
@@ -159,5 +167,5 @@ if (what === 'page') {
     generateSegments(sliceName, segments)
   }
 } else {
-  generateSegments(sliceName, what, args)
+  generateSegments(sliceName, [...what], args)
 }

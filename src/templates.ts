@@ -1,7 +1,7 @@
 // All templates start
-const { toCamelCase, toPascalCase } = require('./helpers.js')
+import { toCamelCase, toPascalCase } from './helpers.js'
 
-const pageTemplate = (sliceName) => {
+export const pageTemplate = (sliceName: string) => {
   return `
 import { PageLayout } from '@features/layouts';
 import { HeaderWidget } from '@widgets/header';
@@ -29,13 +29,13 @@ const ${toPascalCase(sliceName)}Index = () => {
 
 export default ${toPascalCase(sliceName)}Index;`
 }
-const uiTemplate = (sliceName) => {
+export const uiTemplate = (sliceName: string) => {
   return `
   export const ${toPascalCase(sliceName)} = () => {
       // return <div>${toPascalCase(sliceName)}</div>;
   };`
 }
-const apiTemplate = (sliceName) => {
+export const apiTemplate = (sliceName: string) => {
   return `
     import { apiClient } from '@services';
     export const get${toPascalCase(
@@ -52,7 +52,7 @@ const apiTemplate = (sliceName) => {
     )}Request= params => apiClient.client.delete('/${sliceName}',params);
   `
 }
-const typeTemplate = (sliceName) => {
+export const typeTemplate = (sliceName: string) => {
   return `
 import { TPagination } from '@types';
 
@@ -83,9 +83,10 @@ export type T${toPascalCase(sliceName)} = {
 };
 `
 }
-const sliceTemplate = (sliceName, layer = null) => {
-  if (layer === null) uiTemplate(sliceName)
+export const sliceTemplate = (sliceName, layer = null) => {
+  if (layer === null) return uiTemplate(sliceName)
   let result = ''
+
   switch (layer) {
     case 'ui':
       result = uiTemplate(sliceName)
@@ -98,12 +99,4 @@ const sliceTemplate = (sliceName, layer = null) => {
       break
   }
   return result
-}
-// All Templates end
-module.exports = {
-  pageTemplate,
-  uiTemplate,
-  apiTemplate,
-  typeTemplate,
-  sliceTemplate,
 }
