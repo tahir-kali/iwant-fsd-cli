@@ -6,13 +6,13 @@
 npm install -g iwant-fsd
 ```
 
-## Guide 
+## Guide
 
 ```sh
 iwant [entity] [page] [widget] [PageName] -s [scaffold-options]
 ```
 
-## Example 
+## Example
 
 ```sh
 iwant page homePage -s f,e,w
