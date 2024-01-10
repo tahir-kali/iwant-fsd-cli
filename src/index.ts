@@ -1,171 +1,171 @@
 #!/usr/bin/env node
 
-import fs from 'node:fs'
-import { join } from 'node:path'
-import process from 'node:process'
-import { sliceTemplate, pageTemplate } from './templates.js'
-import { toPascalCase, toCamelCase, toKebabCase } from './helpers.js'
+import fs from "node:fs";
+import { join } from "node:path";
+import process from "node:process";
+import { sliceTemplate, pageTemplate } from "./templates.js";
+import { toPascalCase, toCamelCase, toKebabCase } from "./helpers.js";
 // All constants start
 
 const slices = {
-  e: 'entities',
-  f: 'features',
-  w: 'widgets',
-  s: 'shared',
-  entity: 'entities',
-  feature: 'features',
-  widget: 'widgets',
-  shared: 'shared',
-}
+  e: "entities",
+  f: "features",
+  w: "widgets",
+  s: "shared",
+  entity: "entities",
+  feature: "features",
+  widget: "widgets",
+  shared: "shared",
+};
 
 //  All constants end
 
 // All functions start
 
 const generatePage = (sliceName) => {
-  const pagePath = join('src', 'pages', sliceName, 'index.tsx')
+  const pagePath = join("src", "pages", sliceName, "index.tsx");
   if (sliceExists(pagePath)) {
-    return
+    return;
   }
-  fs.mkdirSync(join('src', 'pages', sliceName), { recursive: true })
-  fs.writeFileSync(pagePath, pageTemplate(sliceName), 'utf-8')
-  updateIndexFile('pages', toPascalCase(sliceName))
-  console.log(`Page '${toPascalCase(sliceName)}' created at ${pagePath}`)
-}
+  fs.mkdirSync(join("src", "pages", sliceName), { recursive: true });
+  fs.writeFileSync(pagePath, pageTemplate(sliceName), "utf-8");
+  updateIndexFile("pages", toPascalCase(sliceName));
+  console.log(`Page '${toPascalCase(sliceName)}' created at ${pagePath}`);
+};
 
 const generateSegments = (
   sliceName: string,
   segments: string[],
-  args: string[] | null = null
+  args: string[] | null = null,
 ) => {
-  segments[0].split(',').forEach((flag) => {
+  segments[0].split(",").forEach((flag) => {
     if (
       Object.values(slices).includes(flag) ||
       Object.keys(slices).includes(flag)
     ) {
-      createSegment(slices[flag], sliceName, null, args)
+      createSegment(slices[flag], sliceName, null, args);
     }
-  })
-  console.log(`Files for '${sliceName}' generated successfully.`)
-}
+  });
+  console.log(`Files for '${sliceName}' generated successfully.`);
+};
 
 const createSegment = (slice, sliceName, layer, args) => {
-  let layerPath = ''
+  let layerPath = "";
   if (layer !== null) {
-    layerPath = join(`${slice}/${sliceName}/${layer}`)
+    layerPath = join(`${slice}/${sliceName}/${layer}`);
   } else {
-    layerPath = join(`${slice}/${sliceName}`)
+    layerPath = join(`${slice}/${sliceName}`);
   }
-  layerPath = join('src', layerPath)
-  fs.mkdirSync(layerPath, { recursive: true })
+  layerPath = join("src", layerPath);
+  fs.mkdirSync(layerPath, { recursive: true });
 
   const slicePath = join(
     layerPath,
-    ['ui', null].includes(layer) ? `index.tsx` : 'index.ts'
-  )
+    ["ui", null].includes(layer) ? `index.tsx` : "index.ts",
+  );
 
   if (sliceExists(slicePath)) {
-    return
+    return;
   }
 
-  fs.writeFileSync(slicePath, sliceTemplate(sliceName, layer), 'utf-8')
+  fs.writeFileSync(slicePath, sliceTemplate(sliceName, layer), "utf-8");
 
   if (layer === null) {
-    updateIndexFile(`${slice}`, toPascalCase(sliceName))
+    updateIndexFile(`${slice}`, toPascalCase(sliceName));
   }
 
-  if (args && args.length && args.includes('-s')) {
-    args[args.length - 1].split(',').forEach((segment) => {
-      createSegment(slice, sliceName, segment, null)
-    })
+  if (args && args.length && args.includes("-s")) {
+    args[args.length - 1].split(",").forEach((segment) => {
+      createSegment(slice, sliceName, segment, null);
+    });
   }
 
   console.log(
-    `Entity for '${toPascalCase(sliceName)}' generated at ${slicePath}`
-  )
-}
+    `Entity for '${toPascalCase(sliceName)}' generated at ${slicePath}`,
+  );
+};
 
 const sliceExists = (path) => {
   if (fs.existsSync(path)) {
-    return true
+    return true;
   }
-  return false
-}
+  return false;
+};
 const updateIndexFile = (path, sliceName) => {
-  let indexPath = ''
-  if (path.toString().split('/').includes('src')) {
-    indexPath = `${path}/index.ts` // Update the path to your actual index.ts file
+  let indexPath = "";
+  if (path.toString().split("/").includes("src")) {
+    indexPath = `${path}/index.ts`; // Update the path to your actual index.ts file
   } else {
-    indexPath = `src/${path}/index.ts` // Update the path to your actual index.ts file
+    indexPath = `src/${path}/index.ts`; // Update the path to your actual index.ts file
   }
   if (fs.existsSync(indexPath)) {
     // Read the content of the existing index.ts file
-    fs.readFile(indexPath, 'utf-8', (err, data) => {
+    fs.readFile(indexPath, "utf-8", (err, data) => {
       if (err) {
-        console.error('Error reading index.ts:', err)
-        return
+        console.error("Error reading index.ts:", err);
+        return;
       }
       // Add the dynamic import statement
       const dynamicImport = `import * as ${toCamelCase(
-        sliceName
-      )} from './${toKebabCase(sliceName)}';\n`
+        sliceName,
+      )} from './${toKebabCase(sliceName)}';\n`;
       const updatedContent = data.replace(
         /(import \* as [^;]+;)/,
-        `$1\n${dynamicImport}`
-      )
+        `$1\n${dynamicImport}`,
+      );
 
       // Add the dynamic export statement
-      const dynamicExport = `, ${toCamelCase(sliceName)}`
+      const dynamicExport = `, ${toCamelCase(sliceName)}`;
       const updatedExports = updatedContent.replace(
         /export\s*\{([^}]+)\}\s*;/g,
-        `export {$1${dynamicExport}};`
-      )
+        `export {$1${dynamicExport}};`,
+      );
 
       // Write the updated content back to the index.ts file
-      fs.writeFile(indexPath, updatedExports, 'utf-8', (err) => {
+      fs.writeFile(indexPath, updatedExports, "utf-8", (err) => {
         if (err) {
-          console.error('Error writing to index.ts:', err)
-          return
+          console.error("Error writing to index.ts:", err);
+          return;
         }
 
         console.log(
-          `Index file updated successfully for '${toCamelCase(sliceName)}'.`
-        )
-      })
-    })
+          `Index file updated successfully for '${toCamelCase(sliceName)}'.`,
+        );
+      });
+    });
   } else {
     // If the file or directory doesn't exist, generate default content
     const defaultContent = `import * as ${sliceName} from './${toKebabCase(
-      sliceName
-    )}';\n\nexport { ${sliceName} };`
+      sliceName,
+    )}';\n\nexport { ${sliceName} };`;
 
     // Write the default content to the index.ts file
-    fs.writeFileSync(indexPath, defaultContent, 'utf-8')
+    fs.writeFileSync(indexPath, defaultContent, "utf-8");
 
-    console.log(`Index file created successfully for '${sliceName}'.`)
+    console.log(`Index file created successfully for '${sliceName}'.`);
   }
-}
+};
 
 // All functions end
 
 // Usage
 
-const what = process.argv[2]
-const sliceName = process.argv[3]
-const args = process.argv
-const segments = process.argv.slice(5)
+const what = process.argv[2];
+const sliceName = process.argv[3];
+const args = process.argv;
+const segments = process.argv.slice(5);
 
 if (!sliceName) {
-  console.error('Please provide a name for the slice.')
-  process.exit(1)
+  console.error("Please provide a name for the slice.");
+  process.exit(1);
 }
 
-if (what === 'page') {
-  console.log(what)
-  generatePage(sliceName)
-  if (args.length && args.includes('-s') && segments.length) {
-    generateSegments(sliceName, segments)
+if (what === "page") {
+  console.log(what);
+  generatePage(sliceName);
+  if (args.length && args.includes("-s") && segments.length) {
+    generateSegments(sliceName, segments);
   }
 } else {
-  generateSegments(sliceName, [...what], args)
+  generateSegments(sliceName, [...what], args);
 }
