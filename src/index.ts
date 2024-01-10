@@ -7,7 +7,7 @@ import { sliceTemplate, pageTemplate } from "./templates.js";
 import { toPascalCase, toCamelCase, toKebabCase } from "./helpers.js";
 // All constants start
 
-const slices = {
+const slices: { [key: string]: string } = {
   e: "entities",
   f: "features",
   w: "widgets",
@@ -22,7 +22,7 @@ const slices = {
 
 // All functions start
 
-const generatePage = (sliceName) => {
+const generatePage = (sliceName: string) => {
   const pagePath = join("src", "pages", sliceName, "index.tsx");
   if (sliceExists(pagePath)) {
     return;
@@ -38,7 +38,7 @@ const generateSegments = (
   segments: string[],
   args: string[] | null = null,
 ) => {
-  segments[0].split(",").forEach((flag) => {
+  segments[0].split(",").forEach((flag: string) => {
     if (
       Object.values(slices).includes(flag) ||
       Object.keys(slices).includes(flag)
@@ -49,7 +49,12 @@ const generateSegments = (
   console.log(`Files for '${sliceName}' generated successfully.`);
 };
 
-const createSegment = (slice, sliceName, layer, args) => {
+const createSegment = (
+  slice: string,
+  sliceName: string,
+  layer: string | null,
+  args: string[] | null = null,
+) => {
   let layerPath = "";
   if (layer !== null) {
     layerPath = join(`${slice}/${sliceName}/${layer}`);
@@ -85,13 +90,13 @@ const createSegment = (slice, sliceName, layer, args) => {
   );
 };
 
-const sliceExists = (path) => {
+const sliceExists = (path: string) => {
   if (fs.existsSync(path)) {
     return true;
   }
   return false;
 };
-const updateIndexFile = (path, sliceName) => {
+const updateIndexFile = (path: string, sliceName: string) => {
   let indexPath = "";
   if (path.toString().split("/").includes("src")) {
     indexPath = `${path}/index.ts`; // Update the path to your actual index.ts file
