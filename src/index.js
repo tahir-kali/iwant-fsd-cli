@@ -1,37 +1,23 @@
 #!/usr/bin/env node
 
-const fs = require('fs')
-const path = require('path')
-// All templates start
+import fs from 'fs'
+import path from 'path'
+import { sliceTemplate, pageTemplate } from './templates.js'
+import { toPascalCase, toCamelCase, toKebabCase } from './helpers.js'
+// All constants start
 
-const pageTemplate = (sliceName) => `
-import { PageLayout } from '@features/layouts';
-import { HeaderWidget } from '@widgets/header';
-import { TabPage } from '@ui';
+const slices = {
+  e: 'entities',
+  f: 'features',
+  w: 'widgets',
+  s: 'shared',
+  entity: 'entities',
+  feature: 'features',
+  widget: 'widgets',
+  shared: 'shared',
+}
 
-const ${toPascalCase(sliceName)}Index = () => {
-  const tabs = ['Tab1', 'Tab2', 'Tab3', 'Tab4'];
-
-  return (
-    <div className="h-full w-full">
-      <HeaderWidget />
-      <PageLayout>
-         
-          <div className="bg-white rounded-lg p-12">
-            <TabPage
-              tabs={tabs}
-              components={[<div></div>,<div></div>,<div></div>,<div></div>]}
-            />
-          </div>
-       
-      </PageLayout>
-    </div>
-  );
-};
-
-export default ${toPascalCase(sliceName)}Index;`
-
-// All Templates end
+//  All constants end
 
 // All functions start
 
@@ -48,16 +34,6 @@ const generatePage = (sliceName) => {
 
 const generateSegments = (sliceName, segments, args = null) => {
   segments[0].split(',').forEach((flag) => {
-    const slices = {
-      e: 'entities',
-      f: 'features',
-      w: 'widgets',
-      s: 'shared',
-      entity: 'entities',
-      feature: 'features',
-      widget: 'widgets',
-      shared: 'shared',
-    }
     if (
       Object.values(slices).includes(flag) ||
       Object.keys(slices).includes(flag)
@@ -78,19 +54,13 @@ const createSegment = (slice, sliceName, layer, args) => {
   layerPath = path.join('src', layerPath)
   fs.mkdirSync(layerPath, { recursive: true })
 
-  const sliceTemplate = `
-export const ${toPascalCase(sliceName)} = () => {
-    // return <div>${toPascalCase(sliceName)}</div>;
-}
-  `
-
   const slicePath = path.join(layerPath, `index.tsx`)
 
   if (sliceExists(slicePath)) {
     return
   }
 
-  fs.writeFileSync(slicePath, sliceTemplate, 'utf-8')
+  fs.writeFileSync(slicePath, sliceTemplate(sliceName), 'utf-8')
 
   if (layer === null) {
     updateIndexFile(`${slice}`, toPascalCase(sliceName))
@@ -127,7 +97,6 @@ const updateIndexFile = (path, sliceName) => {
         console.error('Error reading index.ts:', err)
         return
       }
-
       // Add the dynamic import statement
       const dynamicImport = `import * as ${toCamelCase(
         sliceName
@@ -167,22 +136,6 @@ const updateIndexFile = (path, sliceName) => {
 
     console.log(`Index file created successfully for '${sliceName}'.`)
   }
-}
-const toPascalCase = (sliceName) => {
-  const arr = sliceName.split('-')
-  let result = ''
-  arr.forEach((el) => {
-    result += el.charAt(0).toUpperCase() + el.slice(1)
-  })
-  return result
-}
-const toCamelCase = (kebabCaseString) => {
-  return kebabCaseString.replace(/-([a-z])/g, (_, letter) =>
-    letter.toUpperCase()
-  )
-}
-const toKebabCase = (inputString) => {
-  return inputString.replace(/([a-z])([A-Z])/g, '$1-$2').toLowerCase()
 }
 
 // All functions end

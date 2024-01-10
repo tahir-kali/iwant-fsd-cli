@@ -2,7 +2,8 @@
   "name": "iwant-fsd",
   "version": "1.6.0",
   "description": "",
-  "main": "index.js",
+  "main": "./src/index.js",
+  "type": "commonjs",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "lint-staged": "npx lint-staged",
@@ -21,7 +22,7 @@
     }
   },
   "bin": {
-    "iwant": "index.js"
+    "iwant": "./src/index.js"
   },
   "repository": {
     "type": "git",
