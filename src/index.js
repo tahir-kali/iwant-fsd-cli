@@ -35,7 +35,7 @@ export default ${toPascalCase(sliceName)}Index;`
 
 // All functions start
 
-function generatePage(sliceName) {
+const generatePage = (sliceName) => {
   const pagePath = path.join('src', 'pages', sliceName, 'index.tsx')
   if (sliceExists(pagePath)) {
     return
@@ -46,7 +46,7 @@ function generatePage(sliceName) {
   console.log(`Page '${toPascalCase(sliceName)}' created at ${pagePath}`)
 }
 
-function generateSegments(sliceName, segments, args = null) {
+const generateSegments = (sliceName, segments, args = null) => {
   segments[0].split(',').forEach((flag) => {
     const slices = {
       e: 'entities',
