@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 
-import fs from 'fs'
-import path from 'path'
-import { sliceTemplate, pageTemplate } from './templates.js'
-import { toPascalCase, toCamelCase, toKebabCase } from './helpers.js'
+const fs = require('fs')
+const path = require('path')
+const { sliceTemplate, pageTemplate } = require('./templates.js')
+const { toPascalCase, toCamelCase, toKebabCase } = require('./helpers.js')
 // All constants start
 
 const slices = {
@@ -60,7 +60,7 @@ const createSegment = (slice, sliceName, layer, args) => {
     return
   }
 
-  fs.writeFileSync(slicePath, sliceTemplate(sliceName), 'utf-8')
+  fs.writeFileSync(slicePath, sliceTemplate(sliceName, layer), 'utf-8')
 
   if (layer === null) {
     updateIndexFile(`${slice}`, toPascalCase(sliceName))
