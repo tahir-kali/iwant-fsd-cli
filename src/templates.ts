@@ -1,5 +1,5 @@
 // All templates start
-import { toCamelCase, toPascalCase } from './helpers.js'
+import { toCamelCase, toPascalCase } from "./helpers.js";
 
 export const pageTemplate = (sliceName: string) => {
   return `
@@ -27,31 +27,31 @@ const ${toPascalCase(sliceName)}Index = () => {
   );
 };
 
-export default ${toPascalCase(sliceName)}Index;`
-}
+export default ${toPascalCase(sliceName)}Index;`;
+};
 export const uiTemplate = (sliceName: string) => {
   return `
   export const ${toPascalCase(sliceName)} = () => {
       // return <div>${toPascalCase(sliceName)}</div>;
-  };`
-}
+  };`;
+};
 export const apiTemplate = (sliceName: string) => {
   return `
     import { apiClient } from '@services';
     export const get${toPascalCase(
-      sliceName
-    )}Request= (params:unkown) => apiClient.client.get('/${sliceName}',params);
+      sliceName,
+    )}Request= (params:unknown) => apiClient.client.get('/${sliceName}',params);
     export const post${toPascalCase(
-      sliceName
-    )}Request= params => apiClient.client.post('/${sliceName}',params);
+      sliceName,
+    )}Request= (params:unknown) => apiClient.client.post('/${sliceName}',params);
     export const update${toPascalCase(
-      sliceName
-    )}Request= params => apiClient.client.put('/${sliceName}',params);
+      sliceName,
+    )}Request= (params:unknown) => apiClient.client.put('/${sliceName}',params);
     export const delete${toPascalCase(
-      sliceName
-    )}Request= params => apiClient.client.delete('/${sliceName}',params);
-  `
-}
+      sliceName,
+    )}Request= (params:unknown) => apiClient.client.delete('/${sliceName}',params);
+  `;
+};
 export const typeTemplate = (sliceName: string) => {
   return `
 import { TPagination } from '@types';
@@ -81,22 +81,22 @@ export type T${toPascalCase(sliceName)} = {
   data: T${toPascalCase(sliceName)}Record[];
   pagination: TPagination;
 };
-`
-}
+`;
+};
 export const sliceTemplate = (sliceName, layer = null) => {
-  if (layer === null) return uiTemplate(sliceName)
-  let result = ''
+  if (layer === null) return uiTemplate(sliceName);
+  let result = "";
 
   switch (layer) {
-    case 'ui':
-      result = uiTemplate(sliceName)
-      break
-    case 'api':
-      result = apiTemplate(sliceName)
-      break
-    case 'types':
-      result = typeTemplate(sliceName)
-      break
+    case "ui":
+      result = uiTemplate(sliceName);
+      break;
+    case "api":
+      result = apiTemplate(sliceName);
+      break;
+    case "types":
+      result = typeTemplate(sliceName);
+      break;
   }
-  return result
-}
+  return result;
+};

@@ -1,5 +1,7 @@
 /node_modules
-!src/*.js
-!src/*.jsx
-!src/*.ts
-!src/*.tsx
+src/pagese
+src/features
+src/entities
+src/shared
+src/widgets
+
