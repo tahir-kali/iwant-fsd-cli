@@ -171,7 +171,7 @@ const toKebabCase=(inputString)=> {
 const what = process.argv[2]
 const sliceName = process.argv[3];
 const flags = process.argv.slice(3);
-
+console.log(flags);
 if (!sliceName) {
   console.error('Please provide a page name.');
   process.exit(1);
