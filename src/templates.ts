@@ -83,7 +83,7 @@ export type T${toPascalCase(sliceName)} = {
 };
 `;
 };
-export const sliceTemplate = (sliceName, layer = null) => {
+export const sliceTemplate = (sliceName: string, layer = null) => {
   if (layer === null) return uiTemplate(sliceName);
   let result = "";
 

@@ -63,16 +63,16 @@ var apiTemplate = (sliceName2) => {
     import { apiClient } from '@services';
     export const get${toPascalCase(
       sliceName2,
-    )}Request= (params:unkown) => apiClient.client.get('/${sliceName2}',params);
+    )}Request= (params:unknown) => apiClient.client.get('/${sliceName2}',params);
     export const post${toPascalCase(
       sliceName2,
-    )}Request= params => apiClient.client.post('/${sliceName2}',params);
+    )}Request= (params:unknown) => apiClient.client.post('/${sliceName2}',params);
     export const update${toPascalCase(
       sliceName2,
-    )}Request= params => apiClient.client.put('/${sliceName2}',params);
+    )}Request= (params:unknown) => apiClient.client.put('/${sliceName2}',params);
     export const delete${toPascalCase(
       sliceName2,
-    )}Request= params => apiClient.client.delete('/${sliceName2}',params);
+    )}Request= (params:unknown) => apiClient.client.delete('/${sliceName2}',params);
   `;
 };
 var typeTemplate = (sliceName2) => {
