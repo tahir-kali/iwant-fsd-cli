@@ -1,4 +1,7 @@
 /node_modules
 ./*.js
 ./*.json
-./src/**
+!src/*.js
+!src/*.jsx
+!src/*.ts
+!src/*.tsx
