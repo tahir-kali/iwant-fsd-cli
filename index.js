@@ -29,9 +29,7 @@ const ${toPascalCase(sliceName)}Index = () => {
   );
 };
 
-  export default ${toPascalCase(sliceName)}Index;
-  
-  `;
+export default ${toPascalCase(sliceName)}Index;`;
 
   const pagePath = path.join('src', 'pages', sliceName, 'index.tsx');
   if(sliceExists(pagePath)){
@@ -56,31 +54,46 @@ function generateSegments(sliceName, segments,arguments=null) {
       'shared':'shared'
     }
    if(Object.values(slices).includes(flag) || Object.keys(slices).includes(flag)){
-    createSegment(slices[flag],sliceName,arguments)
+    createSegment(slices[flag],sliceName,null,arguments)
    }
 })
   console.log(`Files for '${sliceName}' generated successfully.`);
 }
 
-function createSegment(slice,sliceName,arguments) {
-  const layerPath = path.join('src', `${slice}/${sliceName}`);
+function createSegment(slice,sliceName,layer,arguments) {
+  let layerPath = '';
+  if(layer!==null){
+  
+    layerPath = path.join(`${slice}/${sliceName}/${layer}`);
+  }else{
+    layerPath = path.join(`${slice}/${sliceName}`);
+  }
+  layerPath = path.join('src',layerPath);
   fs.mkdirSync(layerPath, { recursive: true });
 
-  const entityTemplate = `
-  export const ${toPascalCase(sliceName)} = ()=> {
-      return <div> ${toPascalCase(sliceName)} entity</div>
-  }
+  const sliceTemplate = `
+export const ${toPascalCase(sliceName)} = () => {
+    // return <div>${toPascalCase(sliceName)}</div>;
+}
   `;
 
   const slicePath = path.join(layerPath, `index.tsx`);
+
   if(sliceExists(slicePath)){
     return;
   }
-  fs.writeFileSync(slicePath, entityTemplate, 'utf-8');
-  updateIndexFile(slice,toPascalCase(sliceName));
+
+  fs.writeFileSync(slicePath, sliceTemplate, 'utf-8');
+
+  if(layer===null){
+    updateIndexFile(`${slice}`,toPascalCase(sliceName));
+  }
 
   if(arguments && arguments.length && arguments.includes('-s')){
-    console.log('has other segments: '+arguments[arguments.length-1]);
+    arguments[arguments.length-1].split(',').forEach(segment=>{
+  
+      createSegment(slice,sliceName,segment,null);
+    })
   }
 
   console.log(`Entity for '${toPascalCase(sliceName)}' generated at ${slicePath}`);
@@ -93,7 +106,13 @@ const sliceExists=(path)=>{
   return false;
 }
 const updateIndexFile=(path,sliceName)=> {
-  const indexPath = `src/${path}/index.ts`; // Update the path to your actual index.ts file
+  let indexPath = '';
+  if(path.toString().split('/').includes('src')){
+     indexPath = `${path}/index.ts`; // Update the path to your actual index.ts file
+  }else{
+   indexPath = `src/${path}/index.ts`; // Update the path to your actual index.ts file
+
+  }
   if (fs.existsSync(indexPath)) {
   // Read the content of the existing index.ts file
   fs.readFile(indexPath, 'utf-8', (err, data) => {
@@ -158,9 +177,9 @@ if (!sliceName) {
 }
 
 if(what==="page"){
+  console.log(what);
   generatePage(sliceName);
   if(arguments.length && arguments.includes('-s') && segments.length) {
-    console.log('Running this part '+segments);
     generateSegments(sliceName, segments);
   }
 }else{
