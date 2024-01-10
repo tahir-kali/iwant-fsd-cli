@@ -63,7 +63,7 @@ function generateSegments(sliceName, segments, args = null) {
   console.log(`Files for '${sliceName}' generated successfully.`)
 }
 
-function createSegment(slice, sliceName, layer, args) {
+const createSegment = (slice, sliceName, layer, args) => {
   let layerPath = ''
   if (layer !== null) {
     layerPath = path.join(`${slice}/${sliceName}/${layer}`)
