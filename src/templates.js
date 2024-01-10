@@ -1,7 +1,7 @@
 // All templates start
 const { toCamelCase, toPascalCase } = require('./helpers.js')
 
-export const pageTemplate = (sliceName) => {
+const pageTemplate = (sliceName) => {
   return `
 import { PageLayout } from '@features/layouts';
 import { HeaderWidget } from '@widgets/header';
@@ -83,7 +83,7 @@ export type T${toPascalCase(sliceName)} = {
 };
 `
 }
-export const sliceTemplate = (sliceName, layer = null) => {
+const sliceTemplate = (sliceName, layer = null) => {
   if (layer === null) uiTemplate(sliceName)
   let result = ''
   switch (layer) {
@@ -100,3 +100,10 @@ export const sliceTemplate = (sliceName, layer = null) => {
   return result
 }
 // All Templates end
+module.exports = {
+  pageTemplate,
+  uiTemplate,
+  apiTemplate,
+  typeTemplate,
+  sliceTemplate,
+}

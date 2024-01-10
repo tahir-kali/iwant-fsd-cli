@@ -1,4 +1,4 @@
-export const toPascalCase = (sliceName) => {
+const toPascalCase = (sliceName) => {
   const arr = sliceName.split('-')
   let result = ''
   arr.forEach((el) => {
@@ -6,11 +6,16 @@ export const toPascalCase = (sliceName) => {
   })
   return result
 }
-export const toCamelCase = (kebabCaseString) => {
+const toCamelCase = (kebabCaseString) => {
   return kebabCaseString.replace(/-([a-z])/g, (_, letter) =>
     letter.toUpperCase()
   )
 }
-export const toKebabCase = (inputString) => {
+const toKebabCase = (inputString) => {
   return inputString.replace(/([a-z])([A-Z])/g, '$1-$2').toLowerCase()
+}
+module.exports = {
+  toPascalCase,
+  toCamelCase,
+  toKebabCase,
 }
