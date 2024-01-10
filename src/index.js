@@ -2,9 +2,9 @@
 
 const fs = require('fs')
 const path = require('path')
+// All templates start
 
-function generatePage(sliceName) {
-  const pageTemplate = `
+const pageTemplate = (sliceName) => `
 import { PageLayout } from '@features/layouts';
 import { HeaderWidget } from '@widgets/header';
 import { TabPage } from '@ui';
@@ -31,12 +31,17 @@ const ${toPascalCase(sliceName)}Index = () => {
 
 export default ${toPascalCase(sliceName)}Index;`
 
+// All Templates end
+
+// All functions start
+
+function generatePage(sliceName) {
   const pagePath = path.join('src', 'pages', sliceName, 'index.tsx')
   if (sliceExists(pagePath)) {
     return
   }
   fs.mkdirSync(path.join('src', 'pages', sliceName), { recursive: true })
-  fs.writeFileSync(pagePath, pageTemplate, 'utf-8')
+  fs.writeFileSync(pagePath, pageTemplate(sliceName), 'utf-8')
   updateIndexFile('pages', toPascalCase(sliceName))
   console.log(`Page '${toPascalCase(sliceName)}' created at ${pagePath}`)
 }
@@ -179,7 +184,11 @@ const toCamelCase = (kebabCaseString) => {
 const toKebabCase = (inputString) => {
   return inputString.replace(/([a-z])([A-Z])/g, '$1-$2').toLowerCase()
 }
-// Usage example:
+
+// All functions end
+
+// Usage
+
 const what = process.argv[2]
 const sliceName = process.argv[3]
 const args = process.argv
