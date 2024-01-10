@@ -34,85 +34,64 @@ const ${toPascalCase(sliceName)}Index = () => {
   `;
 
   const pagePath = path.join('src', 'pages', sliceName, 'index.tsx');
-
+  if(sliceExists(pagePath)){
+    return;
+  }
   fs.mkdirSync(path.join('src', 'pages', sliceName), { recursive: true });
   fs.writeFileSync(pagePath, pageTemplate, 'utf-8');
   updateIndexFile('pages',toPascalCase(sliceName));
   console.log(`Page '${toPascalCase(sliceName)}' created at ${pagePath}`);
 }
 
-function generateFiles(sliceName, flags) {
-  flags.forEach(arg => {
-    arg.split(',').forEach(flag=>{
-        console.log(flag);  
-        switch (flag) {
-            case 'e':
-              generateEntity(sliceName);
-              break;
-            case 'f':
-              generateFeature(sliceName);
-              break;
-            case 'w':
-              generateWidget(sliceName);
-              break;
-            // Add additional cases for other flags as needed
-            // ...
-          }
-    })
-  });
-
+function generateSegments(sliceName, segments,arguments=null) {
+  segments[0].split(',').forEach(flag=>{
+    const slices = {
+      'e':'entities',
+      'f':'features',
+      'w':'widgets',
+      's':'shared',
+      'entity':'entities',
+      'feature':'features',
+      'widget':'widgets',
+      'shared':'shared'
+    }
+   if(Object.values(slices).includes(flag) || Object.keys(slices).includes(flag)){
+    createSegment(slices[flag],sliceName,arguments)
+   }
+})
   console.log(`Files for '${sliceName}' generated successfully.`);
 }
 
-function generateEntity(sliceName) {
-  const entitiesPath = path.join('src', `entities/${sliceName}`);
-  fs.mkdirSync(entitiesPath, { recursive: true });
+function createSegment(slice,sliceName,arguments) {
+  const layerPath = path.join('src', `${slice}/${sliceName}`);
+  fs.mkdirSync(layerPath, { recursive: true });
 
   const entityTemplate = `
-    export const ${toPascalCase(sliceName)} = ()=> {
+  export const ${toPascalCase(sliceName)} = ()=> {
       return <div> ${toPascalCase(sliceName)} entity</div>
-    }
+  }
   `;
 
-  const entityFilePath = path.join(entitiesPath, `index.tsx`);
-  fs.writeFileSync(entityFilePath, entityTemplate, 'utf-8');
-  updateIndexFile('entities',toPascalCase(sliceName));
-  console.log(`Entity for '${toPascalCase(sliceName)}' generated at ${entityFilePath}`);
-}
-
-function generateFeature(sliceName) {
-  const featuresPath = path.join('src', `features/${sliceName}`);
-  fs.mkdirSync(featuresPath, { recursive: true });
-
-  const featureTemplate = `
-  export const ${toPascalCase(sliceName)} = ()=> {
-    return <div> ${toPascalCase(sliceName)} feature</div>
+  const slicePath = path.join(layerPath, `index.tsx`);
+  if(sliceExists(slicePath)){
+    return;
   }
-`;
+  fs.writeFileSync(slicePath, entityTemplate, 'utf-8');
+  updateIndexFile(slice,toPascalCase(sliceName));
 
-  const featureFilePath = path.join(featuresPath, 'index.tsx');
-  fs.writeFileSync(featureFilePath, featureTemplate, 'utf-8');
-  updateIndexFile('features',toPascalCase(sliceName));
-  console.log(`Entity for '${toPascalCase(sliceName)}' generated at ${featureFilePath}`);
-}
-
-function generateWidget(sliceName) {
-  const widgetsPath = path.join('src', `widgets/${sliceName}`);
-  fs.mkdirSync(widgetsPath, { recursive: true });
-
-  const widgetTemplate = `
-  export const ${toPascalCase(sliceName)} = ()=> {
-    return <div> ${toPascalCase(sliceName)} widget</div>
+  if(arguments && arguments.length && arguments.includes('-s')){
+    console.log('has other segments: '+arguments[arguments.length-1]);
   }
-`;
 
-  const widgetFilePath = path.join(widgetsPath, `index.tsx`);
-  fs.writeFileSync(widgetFilePath, widgetTemplate, 'utf-8');
-  updateIndexFile('widgets',toPascalCase(sliceName));
-  console.log(`widget for '${toPascalCase(sliceName)}' generated at ${widgetFilePath}`);
+  console.log(`Entity for '${toPascalCase(sliceName)}' generated at ${slicePath}`);
 }
 
-
+const sliceExists=(path)=>{
+  if(fs.existsSync(path)){
+    return true;
+  }
+  return false;
+}
 const updateIndexFile=(path,sliceName)=> {
   const indexPath = `src/${path}/index.ts`; // Update the path to your actual index.ts file
   if (fs.existsSync(indexPath)) {
@@ -170,13 +149,21 @@ const toKebabCase=(inputString)=> {
 // Usage example:
 const what = process.argv[2]
 const sliceName = process.argv[3];
-const flags = process.argv.slice(3);
-console.log(flags);
+const arguments = process.argv;
+const segments = process.argv.slice(5);
+
 if (!sliceName) {
-  console.error('Please provide a page name.');
+  console.error('Please provide a name for the slice.');
   process.exit(1);
 }
 
-generatePage(sliceName);
-generateFiles(sliceName, flags);
+if(what==="page"){
+  generatePage(sliceName);
+  if(arguments.length && arguments.includes('-s') && segments.length) {
+    console.log('Running this part '+segments);
+    generateSegments(sliceName, segments);
+  }
+}else{
+  generateSegments(sliceName,what,arguments);
+}
 
