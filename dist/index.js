@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 
 // src/index.ts
-import fs from "node:fs";
-import { join } from "node:path";
-import process from "node:process";
+import fs2 from "node:fs";
+import { join as join2 } from "node:path";
+import process2 from "node:process";
 
 // src/helpers.ts
 var toPascalCase = (sliceName2) => {
@@ -123,6 +123,82 @@ var sliceTemplate = (sliceName2, layer = null) => {
   return result;
 };
 
+// src/detect-root.ts
+import * as fs from "fs/promises";
+import * as path from "path";
+import simpleGit from "simple-git";
+var layers = ["app", "pages", "widgets", "features", "entities", "shared"];
+var defaultIgnoredFolders = ["node_modules", ".git", "dist", "build"];
+async function getLayersCountInFolder(folderPath) {
+  const files = await fs.readdir(folderPath, { withFileTypes: true });
+  return files
+    .filter((file) => file.isDirectory())
+    .map((file) => path.join(folderPath, file.name))
+    .filter((file) => layers.includes(path.basename(file))).length;
+}
+async function filterIgnoredFolders(folders) {
+  if (folders.length === 0) {
+    return [];
+  }
+  const git = simpleGit();
+  const ignoredByGit = (await git.checkIgnore(folders)).map((folder) =>
+    path.normalize(folder.slice(1, -1)),
+  );
+  const filteredByGit = folders.filter(
+    (folder) => !ignoredByGit.includes(folder),
+  );
+  const filteredByDefaults = filteredByGit.filter(
+    (folder) => !defaultIgnoredFolders.includes(path.basename(folder)),
+  );
+  return filteredByDefaults;
+}
+async function detectFsdRoot() {
+  const cwd = path.resolve(process.cwd());
+  const cwdLayersCount = await getLayersCountInFolder(cwd);
+  if (cwdLayersCount >= 2) {
+    return cwd;
+  }
+  const git = simpleGit();
+  const isGitRepo = await git.checkIsRepo();
+  const queue = [cwd];
+  let maxLayersCount = 0;
+  let foldersWithMaxLayers = [];
+  while (queue.length > 0) {
+    const currentDirectory = queue.shift();
+    const directoryContent = await fs.readdir(currentDirectory, {
+      withFileTypes: true,
+    });
+    const directories = directoryContent
+      .filter((item) => item.isDirectory())
+      .map((item) => path.join(currentDirectory, item.name));
+    const filteredDirectories = isGitRepo
+      ? await filterIgnoredFolders(directories)
+      : directories.filter(
+          (item) => !defaultIgnoredFolders.includes(path.basename(item)),
+        );
+    let layerCount = 0;
+    for (const item of filteredDirectories) {
+      queue.push(item);
+      if (layers.includes(path.basename(item))) {
+        layerCount++;
+      }
+    }
+    if (layerCount > maxLayersCount) {
+      maxLayersCount = layerCount;
+      foldersWithMaxLayers = [currentDirectory];
+    } else if (layerCount === maxLayersCount) {
+      foldersWithMaxLayers.push(currentDirectory);
+    }
+  }
+  if (maxLayersCount === 0) {
+    return cwd;
+  }
+  if (foldersWithMaxLayers.length === 1) {
+    return foldersWithMaxLayers[0];
+  }
+  return foldersWithMaxLayers;
+}
+
 // src/index.ts
 var slices = {
   e: "entities",
@@ -134,13 +210,16 @@ var slices = {
   widget: "widgets",
   shared: "shared",
 };
+var root = `${await detectFsdRoot()}/src`;
+console.log(`iwant: The root directory is ${root}`);
 var generatePage = (sliceName2) => {
-  const pagePath = join("src", "pages", sliceName2, "index.tsx");
+  console.log(root);
+  const pagePath = join2(`${root}`, "pages", sliceName2, "index.tsx");
   if (sliceExists(pagePath)) {
     return;
   }
-  fs.mkdirSync(join("src", "pages", sliceName2), { recursive: true });
-  fs.writeFileSync(pagePath, pageTemplate(sliceName2), "utf-8");
+  fs2.mkdirSync(join2(`${root}`, "pages", sliceName2), { recursive: true });
+  fs2.writeFileSync(pagePath, pageTemplate(sliceName2), "utf-8");
   updateIndexFile("pages", toPascalCase(sliceName2));
   console.log(`Page '${toPascalCase(sliceName2)}' created at ${pagePath}`);
 };
@@ -158,20 +237,20 @@ var generateSegments = (sliceName2, segments2, args2 = null) => {
 var createSegment = (slice, sliceName2, layer, args2 = null) => {
   let layerPath = "";
   if (layer !== null) {
-    layerPath = join(`${slice}/${sliceName2}/${layer}`);
+    layerPath = join2(`${slice}/${sliceName2}/${layer}`);
   } else {
-    layerPath = join(`${slice}/${sliceName2}`);
+    layerPath = join2(`${slice}/${sliceName2}`);
   }
-  layerPath = join("src", layerPath);
-  fs.mkdirSync(layerPath, { recursive: true });
-  const slicePath = join(
+  layerPath = join2(`${root}`, layerPath);
+  fs2.mkdirSync(layerPath, { recursive: true });
+  const slicePath = join2(
     layerPath,
     ["ui", null].includes(layer) ? `index.tsx` : "index.ts",
   );
   if (sliceExists(slicePath)) {
     return;
   }
-  fs.writeFileSync(slicePath, sliceTemplate(sliceName2, layer), "utf-8");
+  fs2.writeFileSync(slicePath, sliceTemplate(sliceName2, layer), "utf-8");
   if (layer === null) {
     updateIndexFile(`${slice}`, toPascalCase(sliceName2));
   }
@@ -184,21 +263,21 @@ var createSegment = (slice, sliceName2, layer, args2 = null) => {
     `Entity for '${toPascalCase(sliceName2)}' generated at ${slicePath}`,
   );
 };
-var sliceExists = (path) => {
-  if (fs.existsSync(path)) {
+var sliceExists = (path2) => {
+  if (fs2.existsSync(path2)) {
     return true;
   }
   return false;
 };
-var updateIndexFile = (path, sliceName2) => {
+var updateIndexFile = (path2, sliceName2) => {
   let indexPath = "";
-  if (path.toString().split("/").includes("src")) {
-    indexPath = `${path}/index.ts`;
+  if (path2.toString().split("/").includes(`${root}`)) {
+    indexPath = `${path2}/index.ts`;
   } else {
-    indexPath = `src/${path}/index.ts`;
+    indexPath = `src/${path2}/index.ts`;
   }
-  if (fs.existsSync(indexPath)) {
-    fs.readFile(indexPath, "utf-8", (err, data) => {
+  if (fs2.existsSync(indexPath)) {
+    fs2.readFile(indexPath, "utf-8", (err, data) => {
       if (err) {
         console.error("Error reading index.ts:", err);
         return;
@@ -217,7 +296,7 @@ ${dynamicImport}`,
         /export\s*\{([^}]+)\}\s*;/g,
         `export {$1${dynamicExport}};`,
       );
-      fs.writeFile(indexPath, updatedExports, "utf-8", (err2) => {
+      fs2.writeFile(indexPath, updatedExports, "utf-8", (err2) => {
         if (err2) {
           console.error("Error writing to index.ts:", err2);
           return;
@@ -233,18 +312,18 @@ ${dynamicImport}`,
     )}';
 
 export { ${sliceName2} };`;
-    fs.writeFileSync(indexPath, defaultContent, "utf-8");
+    fs2.writeFileSync(indexPath, defaultContent, "utf-8");
     console.log(`Index file created successfully for '${sliceName2}'.`);
   }
 };
-var what = process.argv[2];
-var sliceName = process.argv[3];
-var args = process.argv;
-var segments = process.argv.slice(5);
-if (!what) process.exit(1);
+var what = process2.argv[2];
+var sliceName = process2.argv[3];
+var args = process2.argv;
+var segments = process2.argv.slice(5);
+if (!what) process2.exit(1);
 if (!sliceName) {
   console.error("Please provide a name for the slice.");
-  process.exit(1);
+  process2.exit(1);
 }
 if (what === "page") {
   generatePage(sliceName);

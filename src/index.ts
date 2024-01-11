@@ -5,6 +5,7 @@ import { join } from "node:path";
 import process from "node:process";
 import { sliceTemplate, pageTemplate } from "./templates.js";
 import { toPascalCase, toCamelCase, toKebabCase } from "./helpers.js";
+import { detectFsdRoot } from "./detect-root.js";
 // All constants start
 
 const slices: { [key: string]: string } = {
@@ -18,16 +19,19 @@ const slices: { [key: string]: string } = {
   shared: "shared",
 };
 
-//  All constants end
+const root = `${await detectFsdRoot()}/src`;
+console.log(`iwant: The root directory is ${root}`);
+// //  All constants end
 
-// All functions start
+// // All functions start
 
 export const generatePage = (sliceName: string) => {
-  const pagePath = join("src", "pages", sliceName, "index.tsx");
+  console.log(root);
+  const pagePath = join(`${root}`, "pages", sliceName, "index.tsx");
   if (sliceExists(pagePath)) {
     return;
   }
-  fs.mkdirSync(join("src", "pages", sliceName), { recursive: true });
+  fs.mkdirSync(join(`${root}`, "pages", sliceName), { recursive: true });
   fs.writeFileSync(pagePath, pageTemplate(sliceName), "utf-8");
   updateIndexFile("pages", toPascalCase(sliceName));
   console.log(`Page '${toPascalCase(sliceName)}' created at ${pagePath}`);
@@ -60,7 +64,7 @@ const createSegment = (
   } else {
     layerPath = join(`${slice}/${sliceName}`);
   }
-  layerPath = join("src", layerPath);
+  layerPath = join(`${root}`, layerPath);
   fs.mkdirSync(layerPath, { recursive: true });
 
   const slicePath = join(
@@ -97,7 +101,7 @@ const sliceExists = (path: string) => {
 };
 const updateIndexFile = (path: string, sliceName: string) => {
   let indexPath = "";
-  if (path.toString().split("/").includes("src")) {
+  if (path.toString().split("/").includes(`${root}`)) {
     indexPath = `${path}/index.ts`; // Update the path to your actual index.ts file
   } else {
     indexPath = `src/${path}/index.ts`; // Update the path to your actual index.ts file
@@ -153,25 +157,24 @@ const updateIndexFile = (path: string, sliceName: string) => {
 // All functions end
 
 // Usage
-if (require.main === module) {
-  const what = process.argv[2];
-  const sliceName = process.argv[3];
-  const args = process.argv;
-  const segments = process.argv.slice(5);
 
-  if (!what) process.exit(1);
+const what = process.argv[2];
+const sliceName = process.argv[3];
+const args = process.argv;
+const segments = process.argv.slice(5);
 
-  if (!sliceName) {
-    console.error("Please provide a name for the slice.");
-    process.exit(1);
+if (!what) process.exit(1);
+
+if (!sliceName) {
+  console.error("Please provide a name for the slice.");
+  process.exit(1);
+}
+
+if (what === "page") {
+  generatePage(sliceName);
+  if (args.length && args.includes("-s") && segments.length) {
+    generateSegments(sliceName, segments);
   }
-
-  if (what === "page") {
-    generatePage(sliceName);
-    if (args.length && args.includes("-s") && segments.length) {
-      generateSegments(sliceName, segments);
-    }
-  } else {
-    generateSegments(sliceName, [...what], args);
-  }
+} else {
+  generateSegments(sliceName, [...what], args);
 }
