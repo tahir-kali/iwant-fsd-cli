@@ -22,7 +22,7 @@ const slices: { [key: string]: string } = {
 
 // All functions start
 
-const generatePage = (sliceName: string) => {
+export const generatePage = (sliceName: string) => {
   const pagePath = join("src", "pages", sliceName, "index.tsx");
   if (sliceExists(pagePath)) {
     return;
@@ -33,7 +33,7 @@ const generatePage = (sliceName: string) => {
   console.log(`Page '${toPascalCase(sliceName)}' created at ${pagePath}`);
 };
 
-const generateSegments = (
+export const generateSegments = (
   sliceName: string,
   segments: string[],
   args: string[] | null = null,
@@ -48,7 +48,6 @@ const generateSegments = (
   });
   console.log(`Files for '${sliceName}' generated successfully.`);
 };
-
 const createSegment = (
   slice: string,
   sliceName: string,
@@ -160,13 +159,14 @@ const sliceName = process.argv[3];
 const args = process.argv;
 const segments = process.argv.slice(5);
 
+if (!what) process.exit(1);
+
 if (!sliceName) {
   console.error("Please provide a name for the slice.");
   process.exit(1);
 }
 
 if (what === "page") {
-  console.log(what);
   generatePage(sliceName);
   if (args.length && args.includes("-s") && segments.length) {
     generateSegments(sliceName, segments);

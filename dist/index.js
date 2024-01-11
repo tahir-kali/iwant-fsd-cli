@@ -155,7 +155,7 @@ var generateSegments = (sliceName2, segments2, args2 = null) => {
   });
   console.log(`Files for '${sliceName2}' generated successfully.`);
 };
-var createSegment = (slice, sliceName2, layer, args2) => {
+var createSegment = (slice, sliceName2, layer, args2 = null) => {
   let layerPath = "";
   if (layer !== null) {
     layerPath = join(`${slice}/${sliceName2}/${layer}`);
@@ -241,12 +241,12 @@ var what = process.argv[2];
 var sliceName = process.argv[3];
 var args = process.argv;
 var segments = process.argv.slice(5);
+if (!what) process.exit(1);
 if (!sliceName) {
   console.error("Please provide a name for the slice.");
   process.exit(1);
 }
 if (what === "page") {
-  console.log(what);
   generatePage(sliceName);
   if (args.length && args.includes("-s") && segments.length) {
     generateSegments(sliceName, segments);
@@ -254,3 +254,4 @@ if (what === "page") {
 } else {
   generateSegments(sliceName, [...what], args);
 }
+export { generatePage, generateSegments };
