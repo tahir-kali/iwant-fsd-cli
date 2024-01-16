@@ -1,8 +1,6 @@
 #!/usr/bin/env node
 
 // src/index.ts
-import fs2 from "node:fs";
-import { join as join2 } from "node:path";
 import process2 from "node:process";
 
 // src/helpers.ts
@@ -63,7 +61,7 @@ var apiTemplate = (sliceName2) => {
     import { apiClient } from '@services';
     export const get${toPascalCase(
       sliceName2,
-    )}Request= (params:unknown) => apiClient.client.get('/${sliceName2}',params);
+    )}Request= (params:unknown) => apiClient.client.get('/${sliceName2}',{params});
     export const post${toPascalCase(
       sliceName2,
     )}Request= (params:unknown) => apiClient.client.post('/${sliceName2}',params);
@@ -199,83 +197,24 @@ async function detectFsdRoot() {
   return foldersWithMaxLayers;
 }
 
-// src/index.ts
-var slices = {
-  e: "entities",
-  f: "features",
-  w: "widgets",
-  s: "shared",
-  entity: "entities",
-  feature: "features",
-  widget: "widgets",
-  shared: "shared",
-};
-var root = `${await detectFsdRoot()}/src`;
-console.log(`iwant: The root directory is ${root}`);
-var generatePage = (sliceName2) => {
-  console.log(root);
-  const pagePath = join2(`${root}`, "pages", sliceName2, "index.tsx");
-  if (sliceExists(pagePath)) {
-    return;
-  }
-  fs2.mkdirSync(join2(`${root}`, "pages", sliceName2), { recursive: true });
-  fs2.writeFileSync(pagePath, pageTemplate(sliceName2), "utf-8");
-  updateIndexFile("pages", toPascalCase(sliceName2));
-  console.log(`Page '${toPascalCase(sliceName2)}' created at ${pagePath}`);
-};
-var generateSegments = (sliceName2, segments2, args2 = null) => {
-  segments2[0].split(",").forEach((flag) => {
-    if (
-      Object.values(slices).includes(flag) ||
-      Object.keys(slices).includes(flag)
-    ) {
-      createSegment(slices[flag], sliceName2, null, args2);
-    }
-  });
-  console.log(`Files for '${sliceName2}' generated successfully.`);
-};
-var createSegment = (slice, sliceName2, layer, args2 = null) => {
-  let layerPath = "";
-  if (layer !== null) {
-    layerPath = join2(`${slice}/${sliceName2}/${layer}`);
-  } else {
-    layerPath = join2(`${slice}/${sliceName2}`);
-  }
-  layerPath = join2(`${root}`, layerPath);
-  fs2.mkdirSync(layerPath, { recursive: true });
-  const slicePath = join2(
-    layerPath,
-    ["ui", null].includes(layer) ? `index.tsx` : "index.ts",
-  );
-  if (sliceExists(slicePath)) {
-    return;
-  }
-  fs2.writeFileSync(slicePath, sliceTemplate(sliceName2, layer), "utf-8");
-  if (layer === null) {
-    updateIndexFile(`${slice}`, toPascalCase(sliceName2));
-  }
-  if (args2 && args2.length && args2.includes("-s")) {
-    args2[args2.length - 1].split(",").forEach((segment) => {
-      createSegment(slice, sliceName2, segment, null);
-    });
-  }
-  console.log(
-    `Entity for '${toPascalCase(sliceName2)}' generated at ${slicePath}`,
-  );
-};
-var sliceExists = (path2) => {
-  if (fs2.existsSync(path2)) {
-    return true;
-  }
-  return false;
-};
-var updateIndexFile = (path2, sliceName2) => {
+// src/generators.ts
+import fs3 from "node:fs";
+import { join as join2 } from "node:path";
+
+// src/update-imports.ts
+import fs2 from "node:fs";
+var updateIndexFile = (path2, sliceName2, fsdRoot2) => {
   let indexPath = "";
-  if (path2.toString().split("/").includes(`${root}`)) {
+  if (path2.toString().split("/").includes(`${fsdRoot2}`)) {
     indexPath = `${path2}/index.ts`;
   } else {
     indexPath = `src/${path2}/index.ts`;
   }
+  if (["pages", "ui"].includes(path2)) {
+    updateIfPagetOrSegment(indexPath, sliceName2);
+  }
+};
+var updateIfPagetOrSegment = (indexPath, sliceName2) => {
   if (fs2.existsSync(indexPath)) {
     fs2.readFile(indexPath, "utf-8", (err, data) => {
       if (err) {
@@ -316,6 +255,83 @@ export { ${sliceName2} };`;
     console.log(`Index file created successfully for '${sliceName2}'.`);
   }
 };
+
+// src/generators.ts
+var slices = {
+  e: "entities",
+  f: "features",
+  w: "widgets",
+  s: "shared",
+  entity: "entities",
+  feature: "features",
+  widget: "widgets",
+  shared: "shared",
+};
+var fsdRoot = await detectFsdRoot();
+if (Array.isArray(fsdRoot)) {
+  fsdRoot = fsdRoot[0];
+} else if (!fsdRoot.split("/").includes("src")) {
+  fsdRoot = `${fsdRoot}/src`;
+}
+var generatePage = (sliceName2) => {
+  console.log(`Root: ${fsdRoot}`);
+  const pagePath = join2(`${fsdRoot}`, "pages", sliceName2, "index.tsx");
+  if (sliceExists(pagePath)) {
+    return;
+  }
+  fs3.mkdirSync(join2(`${fsdRoot}`, "pages", sliceName2), { recursive: true });
+  fs3.writeFileSync(pagePath, pageTemplate(sliceName2), "utf-8");
+  updateIndexFile("pages", toPascalCase(sliceName2), fsdRoot.toString());
+  console.log(`Page '${toPascalCase(sliceName2)}' created at ${pagePath}`);
+};
+var sliceExists = (path2) => {
+  if (fs3.existsSync(path2)) {
+    return true;
+  }
+  return false;
+};
+var generateSegments = (sliceName2, segments2, args2 = null) => {
+  segments2[0].split(",").forEach((flag) => {
+    if (
+      Object.values(slices).includes(flag) ||
+      Object.keys(slices).includes(flag)
+    ) {
+      createSegment(slices[flag], sliceName2, null, args2);
+    }
+  });
+  console.log(`Files for '${sliceName2}' generated successfully.`);
+};
+var createSegment = (slice, sliceName2, layer, args2 = null) => {
+  let layerPath = "";
+  if (layer !== null) {
+    layerPath = join2(`${slice}/${sliceName2}/${layer}`);
+  } else {
+    layerPath = join2(`${slice}/${sliceName2}`);
+  }
+  layerPath = join2(`${fsdRoot}`, layerPath);
+  fs3.mkdirSync(layerPath, { recursive: true });
+  const slicePath = join2(
+    layerPath,
+    ["ui", null].includes(layer) ? `index.tsx` : "index.ts",
+  );
+  if (sliceExists(slicePath)) {
+    return;
+  }
+  fs3.writeFileSync(slicePath, sliceTemplate(sliceName2, layer), "utf-8");
+  if (layer === null) {
+    updateIndexFile(`${slice}`, toPascalCase(sliceName2), fsdRoot.toString());
+  }
+  if (args2 && args2.length && args2.includes("-s")) {
+    args2[args2.length - 1].split(",").forEach((segment) => {
+      createSegment(slice, sliceName2, segment, null);
+    });
+  }
+  console.log(
+    `Entity for '${toPascalCase(sliceName2)}' generated at ${slicePath}`,
+  );
+};
+
+// src/index.ts
 var what = process2.argv[2];
 var sliceName = process2.argv[3];
 var args = process2.argv;
@@ -333,4 +349,3 @@ if (what === "page") {
 } else {
   generateSegments(sliceName, [...what], args);
 }
-export { generatePage, generateSegments };

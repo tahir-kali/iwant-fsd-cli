@@ -40,7 +40,7 @@ export const apiTemplate = (sliceName: string) => {
     import { apiClient } from '@services';
     export const get${toPascalCase(
       sliceName,
-    )}Request= (params:unknown) => apiClient.client.get('/${sliceName}',params);
+    )}Request= (params:unknown) => apiClient.client.get('/${sliceName}',{params});
     export const post${toPascalCase(
       sliceName,
     )}Request= (params:unknown) => apiClient.client.post('/${sliceName}',params);
