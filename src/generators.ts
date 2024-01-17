@@ -9,8 +9,38 @@ import {
 import { sliceExists, toKebabCase, toPascalCase } from "./helpers.js";
 
 import { updateIndexFile } from "./update-imports.js";
-import { fsdRoot, slices } from "./constants.js";
+import { allowedSlices, fsdRoot, sliceName, slices } from "./constants.js";
 
+export const generateShared = async (args: string | string[] | null = null) => {
+  const sharedPath = join(fsdRoot.toString(), "shared");
+  if (!sliceExists(sharedPath)) {
+    await fs.mkdir(sharedPath, { recursive: true });
+  }
+  if (!args?.length) return;
+  const sharedIndex = args.indexOf("shared");
+  const slicesType1 = allowedSlices.filter((slice) => slice !== "ui");
+  console.log(`Args: ${JSON.stringify(args)}`);
+  console.log(`SharedIndex: ${sharedIndex}`);
+  if (args?.length && Array.isArray(args) && sharedIndex) {
+    if (!allowedSlices.includes(args[sharedIndex + 1])) {
+      args.forEach(async (arg) => {
+        if (slicesType1.includes(arg)) {
+          await generateSlice(sliceName, sharedPath, arg);
+        } else {
+          await generateUi(sliceName, sharedPath);
+        }
+      });
+    } else {
+      args.forEach(async (arg) => {
+        const slicePath = `${sharedPath}/${arg}`;
+        if (!sliceExists(slicePath) && allowedSlices.includes(arg)) {
+          await fs.mkdir(slicePath, { recursive: true });
+          await fs.writeFile(join(slicePath, "index.ts"), "");
+        }
+      });
+    }
+  }
+};
 export const generateEntity = async (
   sliceName: string,
   args: string | string[] | null = null,
@@ -22,7 +52,6 @@ export const generateEntity = async (
   );
   await fs.mkdir(entityPath, { recursive: true });
   if (Array.isArray(args) && args.includes("-s")) {
-    const allowedSlices = ["ui", "api", "models", "stores"];
     const slicesType1 = allowedSlices.filter((slice) => slice !== "ui");
     console.log(`Args: ${JSON.stringify(args)}`);
     await Promise.all(
@@ -64,7 +93,9 @@ export const generateSlice = async (
   type: string,
 ) => {
   const slicePath = join(path, type);
-  await fs.mkdir(slicePath, { recursive: true });
+  if (!sliceExists(slicePath)) {
+    await fs.mkdir(slicePath, { recursive: true });
+  }
   const templates: { [key: string]: string } = {
     api: apiTemplate(sliceName),
     models: typeTemplate(sliceName),
@@ -80,8 +111,12 @@ export const generateSlice = async (
 export const generateUi = async (sliceName: string, path: string) => {
   const uiFolderPath = join(path, "ui");
   const sliceFolderPath = join(uiFolderPath, sliceName);
-  await fs.mkdir(uiFolderPath, { recursive: true });
-  await fs.mkdir(sliceFolderPath);
+  if (!sliceExists(uiFolderPath)) {
+    await fs.mkdir(uiFolderPath, { recursive: true });
+  }
+  if (!sliceExists(sliceFolderPath)) {
+    await fs.mkdir(sliceFolderPath, { recursive: true });
+  }
   const template = uiTemplate(sliceName);
   await fs.writeFile(join(sliceFolderPath, "index.tsx"), template);
   const indexPath = join(uiFolderPath, "index.ts");
@@ -96,8 +131,12 @@ export const generateFeatureOrWidget = async (
 ) => {
   const featureFolder = join(fsdRoot.toString(), slices[what]);
   const sliceFolderPath = join(featureFolder, sliceName);
-  await fs.mkdir(featureFolder, { recursive: true });
-  await fs.mkdir(sliceFolderPath);
+  if (!sliceExists(featureFolder)) {
+    await fs.mkdir(featureFolder, { recursive: true });
+  }
+  if (!sliceExists(sliceFolderPath)) {
+    await fs.mkdir(sliceFolderPath, { recursive: true });
+  }
   const template = uiTemplate(sliceName);
   await fs.writeFile(join(sliceFolderPath, "index.tsx"), template);
   updateIndexFile(slices[what], sliceName, fsdRoot.toString());

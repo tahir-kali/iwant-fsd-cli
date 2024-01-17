@@ -98,6 +98,16 @@ var slices = {
   shared: "shared",
   p: "pages",
 };
+var allowedSlices = [
+  "ui",
+  "api",
+  "models",
+  "stores",
+  "utils",
+  "assets",
+  "constants",
+  "services",
+];
 var fsdRoot = await detectFsdRoot();
 if (Array.isArray(fsdRoot)) {
   fsdRoot = fsdRoot[0];
@@ -124,7 +134,6 @@ var toKebabCase = (inputString) => {
   return inputString.replace(/([a-z])([A-Z])/g, "$1-$2").toLowerCase();
 };
 var sliceExists = (path2) => {
-  console.log(`Slice exist: ${path2} - ${fs2.existsSync(path2)}`);
   return fs2.existsSync(path2);
 };
 var deleteAll = () => {
@@ -280,6 +289,36 @@ export { ${toPascalCase(sliceName2)}${append} };`;
 };
 
 // src/generators.ts
+var generateShared = async (args2 = null) => {
+  const sharedPath = join2(fsdRoot.toString(), "shared");
+  if (!sliceExists(sharedPath)) {
+    await fs4.mkdir(sharedPath, { recursive: true });
+  }
+  if (!args2?.length) return;
+  const sharedIndex = args2.indexOf("shared");
+  const slicesType1 = allowedSlices.filter((slice) => slice !== "ui");
+  console.log(`Args: ${JSON.stringify(args2)}`);
+  console.log(`SharedIndex: ${sharedIndex}`);
+  if (args2?.length && Array.isArray(args2) && sharedIndex) {
+    if (!allowedSlices.includes(args2[sharedIndex + 1])) {
+      args2.forEach(async (arg) => {
+        if (slicesType1.includes(arg)) {
+          await generateSlice(sliceName, sharedPath, arg);
+        } else {
+          await generateUi(sliceName, sharedPath);
+        }
+      });
+    } else {
+      args2.forEach(async (arg) => {
+        const slicePath = `${sharedPath}/${arg}`;
+        if (!sliceExists(slicePath) && allowedSlices.includes(arg)) {
+          await fs4.mkdir(slicePath, { recursive: true });
+          await fs4.writeFile(join2(slicePath, "index.ts"), "");
+        }
+      });
+    }
+  }
+};
 var generateEntity = async (sliceName2, args2 = null) => {
   const entityPath = join2(
     fsdRoot.toString(),
@@ -288,7 +327,6 @@ var generateEntity = async (sliceName2, args2 = null) => {
   );
   await fs4.mkdir(entityPath, { recursive: true });
   if (Array.isArray(args2) && args2.includes("-s")) {
-    const allowedSlices = ["ui", "api", "models", "stores"];
     const slicesType1 = allowedSlices.filter((slice) => slice !== "ui");
     console.log(`Args: ${JSON.stringify(args2)}`);
     await Promise.all(
@@ -325,7 +363,9 @@ var generateEntity = async (sliceName2, args2 = null) => {
 };
 var generateSlice = async (sliceName2, path2, type) => {
   const slicePath = join2(path2, type);
-  await fs4.mkdir(slicePath, { recursive: true });
+  if (!sliceExists(slicePath)) {
+    await fs4.mkdir(slicePath, { recursive: true });
+  }
   const templates = {
     api: apiTemplate(sliceName2),
     models: typeTemplate(sliceName2),
@@ -342,8 +382,12 @@ export * from './${sliceName2}.${type}';
 var generateUi = async (sliceName2, path2) => {
   const uiFolderPath = join2(path2, "ui");
   const sliceFolderPath = join2(uiFolderPath, sliceName2);
-  await fs4.mkdir(uiFolderPath, { recursive: true });
-  await fs4.mkdir(sliceFolderPath);
+  if (!sliceExists(uiFolderPath)) {
+    await fs4.mkdir(uiFolderPath, { recursive: true });
+  }
+  if (!sliceExists(sliceFolderPath)) {
+    await fs4.mkdir(sliceFolderPath, { recursive: true });
+  }
   const template = uiTemplate(sliceName2);
   await fs4.writeFile(join2(sliceFolderPath, "index.tsx"), template);
   const indexPath = join2(uiFolderPath, "index.ts");
@@ -356,8 +400,12 @@ export * from './${sliceName2}';
 var generateFeatureOrWidget = async (sliceName2, what2) => {
   const featureFolder = join2(fsdRoot.toString(), slices[what2]);
   const sliceFolderPath = join2(featureFolder, sliceName2);
-  await fs4.mkdir(featureFolder, { recursive: true });
-  await fs4.mkdir(sliceFolderPath);
+  if (!sliceExists(featureFolder)) {
+    await fs4.mkdir(featureFolder, { recursive: true });
+  }
+  if (!sliceExists(sliceFolderPath)) {
+    await fs4.mkdir(sliceFolderPath, { recursive: true });
+  }
   const template = uiTemplate(sliceName2);
   await fs4.writeFile(join2(sliceFolderPath, "index.tsx"), template);
   updateIndexFile(slices[what2], sliceName2, fsdRoot.toString());
@@ -393,7 +441,20 @@ if (!sliceName) {
   console.error("Please provide a name for the slice.");
   process2.exit(1);
 }
-if (what === "page") generatePage(sliceName);
-else if (what === "entity") generateEntity(sliceName, args);
-else if (["feature", "widget"].includes(what))
-  generateFeatureOrWidget(sliceName, what);
+switch (what) {
+  case "page":
+    generatePage(sliceName);
+    break;
+  case "entity":
+    generateEntity(sliceName, args);
+    break;
+  case "feature":
+    generateFeatureOrWidget(sliceName, what);
+    break;
+  case "widget":
+    generateFeatureOrWidget(sliceName, what);
+    break;
+  case "shared":
+    generateShared(args);
+    break;
+}

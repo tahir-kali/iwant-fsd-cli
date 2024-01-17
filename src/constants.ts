@@ -15,6 +15,17 @@ export const slices: { [key: string]: string } = {
   shared: "shared",
   p: "pages",
 };
+export const allowedSlices = [
+  "ui",
+  "api",
+  "models",
+  "stores",
+  "utils",
+  "assets",
+  "constants",
+  "services",
+];
+
 let fsdRoot = await detectFsdRoot();
 if (Array.isArray(fsdRoot)) {
   fsdRoot = fsdRoot[0];

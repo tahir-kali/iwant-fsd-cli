@@ -17,7 +17,6 @@ export const toKebabCase = (inputString: string) => {
   return inputString.replace(/([a-z])([A-Z])/g, "$1-$2").toLowerCase();
 };
 export const sliceExists = (path: string) => {
-  console.log(`Slice exist: ${path} - ${fs.existsSync(path)}`);
   return fs.existsSync(path);
 };
 

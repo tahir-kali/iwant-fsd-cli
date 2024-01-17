@@ -5,6 +5,7 @@ import {
   generatePage,
   generateEntity,
   generateFeatureOrWidget,
+  generateShared,
 } from "./generators";
 import { args, sliceName, what } from "./constants";
 import { deleteAll } from "./helpers";
@@ -20,7 +21,20 @@ if (!sliceName) {
   process.exit(1);
 }
 
-if (what === "page") generatePage(sliceName);
-else if (what === "entity") generateEntity(sliceName, args);
-else if (["feature", "widget"].includes(what))
-  generateFeatureOrWidget(sliceName, what);
+switch (what) {
+  case "page":
+    generatePage(sliceName);
+    break;
+  case "entity":
+    generateEntity(sliceName, args);
+    break;
+  case "feature":
+    generateFeatureOrWidget(sliceName, what);
+    break;
+  case "widget":
+    generateFeatureOrWidget(sliceName, what);
+    break;
+  case "shared":
+    generateShared(args);
+    break;
+}
