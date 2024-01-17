@@ -1,6 +1,6 @@
-import { toCamelCase, toKebabCase } from "./helpers";
+import { toPascalCase, toKebabCase } from "./helpers";
 import fs from "node:fs";
-
+import { extname } from "node:path";
 export const updateIndexFile = (
   path: string,
   sliceName: string,
@@ -12,12 +12,17 @@ export const updateIndexFile = (
   } else {
     indexPath = `src/${path}/index.ts`; // Update the path to your actual index.ts file
   }
-  // if (["pages", "ui"].includes(path)) {
-  updateIfPagetOrSegment(indexPath, sliceName);
-  // }
+  let append = "";
+  if (path === "pages") append = "Index";
+  updateIfPagetOrSegment(indexPath, sliceName, append);
 };
 
-const updateIfPagetOrSegment = (indexPath: string, sliceName: string) => {
+const updateIfPagetOrSegment = (
+  indexPath: string,
+  sliceName: string,
+  append: string = "",
+) => {
+  console.log(`Updating IndexPath: ${indexPath}`);
   if (fs.existsSync(indexPath)) {
     // Read the content of the existing index.ts file
     fs.readFile(indexPath, "utf-8", (err, data) => {
@@ -26,41 +31,42 @@ const updateIfPagetOrSegment = (indexPath: string, sliceName: string) => {
         return;
       }
       // Add the dynamic import statement
-      const dynamicImport = `import * as ${toCamelCase(
-        sliceName,
-      )} from './${toKebabCase(sliceName)}';\n`;
+      const dynamicImport = `import * as ${toPascalCase(sliceName)}${append} from './${toKebabCase(sliceName)}';\n`;
       const updatedContent = data.replace(
         /(import \* as [^;]+;)/,
         `$1\n${dynamicImport}`,
       );
 
       // Add the dynamic export statement
-      const dynamicExport = `, ${toCamelCase(sliceName)}`;
+      const dynamicExport = `, ${toPascalCase(sliceName)}${append}`;
       const updatedExports = updatedContent.replace(
         /export\s*\{([^}]+)\}\s*;/g,
         `export {$1${dynamicExport}};`,
       );
 
       // Write the updated content back to the index.ts file
-      fs.writeFile(indexPath, updatedExports, "utf-8", (err) => {
-        if (err) {
-          console.error("Error writing to index.ts:", err);
-          return;
-        }
-
-        console.log(
-          `Index file updated successfully for '${toCamelCase(sliceName)}'.`,
-        );
-      });
+      fs.writeFileSync(indexPath, updatedExports);
     });
   } else {
-    // If the file or directory doesn't exist, generate default content
-    const defaultContent = `import * as ${sliceName} from './${toKebabCase(
-      sliceName,
-    )}';\n\nexport { ${sliceName} };`;
+    if (extname(indexPath) === "") {
+      // It's a directory
+      fs.mkdirSync(indexPath, { recursive: true });
+      console.log(
+        `${indexPath} directory exists or has been created successfully.`,
+      );
+    } else {
+      // If the file or directory doesn't exist, generate default content
+      const dynamicImport = `import * as ${toPascalCase(
+        sliceName,
+      )}${append} from './${toKebabCase(sliceName)}';\nexport { ${toPascalCase(sliceName)}${append} };`;
 
-    // Write the default content to the index.ts file
-    fs.writeFileSync(indexPath, defaultContent, "utf-8");
+      fs.writeFile(indexPath, dynamicImport, { flag: "wx" }, function (err) {
+        if (err) throw err;
+        console.log("It's saved!");
+      });
+
+      console.log(`${indexPath} file exists or has been created successfully.`);
+    }
 
     console.log(`Index file created successfully for '${sliceName}'.`);
   }

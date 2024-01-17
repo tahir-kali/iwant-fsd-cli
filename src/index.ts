@@ -3,8 +3,8 @@
 import process from "node:process";
 import {
   generatePage,
-  createEntity,
-  createFeatureOrWidget,
+  generateEntity,
+  generateFeatureOrWidget,
 } from "./generators";
 import { args, sliceName, what } from "./constants";
 
@@ -16,6 +16,6 @@ if (!sliceName) {
 }
 
 if (what === "page") generatePage(sliceName);
-else if (what === "entity") createEntity(sliceName, args);
+else if (what === "entity") generateEntity(sliceName, args);
 else if (["feature", "widget"].includes(what))
-  createFeatureOrWidget(sliceName, what);
+  generateFeatureOrWidget(sliceName, what);
