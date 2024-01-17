@@ -6,7 +6,7 @@ import {
   typeTemplate,
   uiTemplate,
 } from "./templates.js";
-import { toKebabCase, toPascalCase } from "./helpers.js";
+import { sliceExists, toKebabCase, toPascalCase } from "./helpers.js";
 import { detectFsdRoot } from "./detect-root.js";
 import { updateIndexFile } from "./update-imports.js";
 import { slices } from "./constants.js";
@@ -127,13 +127,4 @@ export const generatePage = async (sliceName: string) => {
   console.log(
     `Page '${toPascalCase(sliceName)}Index' generated at ${pagePath}`,
   );
-};
-
-const sliceExists = async (path: string) => {
-  try {
-    await fs.access(path);
-    return true;
-  } catch (error) {
-    return false;
-  }
 };

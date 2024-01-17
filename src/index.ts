@@ -7,6 +7,7 @@ import {
   generateFeatureOrWidget,
 } from "./generators";
 import { args, sliceName, what } from "./constants";
+import { deleteAll } from "./helpers";
 
 if (!what) process.exit(1);
 
@@ -16,6 +17,7 @@ if (!sliceName) {
 }
 
 if (what === "page") generatePage(sliceName);
+else if (what === "deleteAll") deleteAll();
 else if (what === "entity") generateEntity(sliceName, args);
 else if (["feature", "widget"].includes(what))
   generateFeatureOrWidget(sliceName, what);
