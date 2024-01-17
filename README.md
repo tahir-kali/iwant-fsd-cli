@@ -17,6 +17,7 @@ iwant [entity] [page] [widget] [PageName] -s [scaffold-options]
 ```sh
 iwant entity create-user -s ui,api,models
 ```
+
 ```sh
 iwant feature create-user
 ```
@@ -24,6 +25,7 @@ iwant feature create-user
 ```sh
 iwant widget create-user
 ```
+
 ```sh
 iwant page login
 ```

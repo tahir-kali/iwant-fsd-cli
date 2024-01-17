@@ -1,4 +1,4 @@
-import { slices } from "./constants";
+import { fsdRoot, slices } from "./constants";
 import fs from "node:fs";
 export const toPascalCase = (sliceName: string) => {
   const arr = sliceName.split("-");
@@ -16,20 +16,18 @@ export const toCamelCase = (kebabCaseString: string) => {
 export const toKebabCase = (inputString: string) => {
   return inputString.replace(/([a-z])([A-Z])/g, "$1-$2").toLowerCase();
 };
-export const sliceExists = async (path: string) => {
-  try {
-    await fs.access(path, undefined, () => true);
-    return true;
-  } catch (error) {
-    return false;
-  }
+export const sliceExists = (path: string) => {
+  console.log(`Slice exist: ${path} - ${fs.existsSync(path)}`);
+  return fs.existsSync(path);
 };
 
 export const deleteAll = () => {
   const layers = Object.values(slices);
-  layers.forEach(async (layer) => {
-    if (await sliceExists(layer)) {
-      console.log(`Exists Slice: ${layer}`);
+  layers.forEach((layer) => {
+    const path = `${fsdRoot}/${layer}`;
+    if (sliceExists(path)) {
+      console.log(`Deleting: ${path}`);
+      fs.rmSync(path, { recursive: true });
     }
   });
 };

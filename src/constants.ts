@@ -1,3 +1,5 @@
+import { detectFsdRoot } from "./detect-root";
+
 export const what = process.argv[2];
 export const sliceName = process.argv[3];
 export const args = process.argv;
@@ -11,4 +13,12 @@ export const slices: { [key: string]: string } = {
   feature: "features",
   widget: "widgets",
   shared: "shared",
+  p: "pages",
 };
+let fsdRoot = await detectFsdRoot();
+if (Array.isArray(fsdRoot)) {
+  fsdRoot = fsdRoot[0];
+} else if (!fsdRoot.split("/").includes("src")) {
+  fsdRoot = `${fsdRoot}/src`;
+}
+export { fsdRoot };

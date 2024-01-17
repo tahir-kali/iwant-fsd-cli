@@ -5,9 +5,108 @@ import process2 from "node:process";
 
 // src/generators.ts
 import { join as join2 } from "node:path";
-import fs3 from "node:fs/promises";
+import fs4 from "node:fs/promises";
+
+// src/detect-root.ts
+import * as fs from "fs/promises";
+import * as path from "path";
+import simpleGit from "simple-git";
+var layers = ["app", "pages", "widgets", "features", "entities", "shared"];
+var defaultIgnoredFolders = ["node_modules", ".git", "dist", "build"];
+async function getLayersCountInFolder(folderPath) {
+  const files = await fs.readdir(folderPath, { withFileTypes: true });
+  return files
+    .filter((file) => file.isDirectory())
+    .map((file) => path.join(folderPath, file.name))
+    .filter((file) => layers.includes(path.basename(file))).length;
+}
+async function filterIgnoredFolders(folders) {
+  if (folders.length === 0) {
+    return [];
+  }
+  const git = simpleGit();
+  const ignoredByGit = (await git.checkIgnore(folders)).map((folder) =>
+    path.normalize(folder.slice(1, -1)),
+  );
+  const filteredByGit = folders.filter(
+    (folder) => !ignoredByGit.includes(folder),
+  );
+  const filteredByDefaults = filteredByGit.filter(
+    (folder) => !defaultIgnoredFolders.includes(path.basename(folder)),
+  );
+  return filteredByDefaults;
+}
+async function detectFsdRoot() {
+  const cwd = path.resolve(process.cwd());
+  const cwdLayersCount = await getLayersCountInFolder(cwd);
+  if (cwdLayersCount >= 2) {
+    return cwd;
+  }
+  const git = simpleGit();
+  const isGitRepo = await git.checkIsRepo();
+  const queue = [cwd];
+  let maxLayersCount = 0;
+  let foldersWithMaxLayers = [];
+  while (queue.length > 0) {
+    const currentDirectory = queue.shift();
+    const directoryContent = await fs.readdir(currentDirectory, {
+      withFileTypes: true,
+    });
+    const directories = directoryContent
+      .filter((item) => item.isDirectory())
+      .map((item) => path.join(currentDirectory, item.name));
+    const filteredDirectories = isGitRepo
+      ? await filterIgnoredFolders(directories)
+      : directories.filter(
+          (item) => !defaultIgnoredFolders.includes(path.basename(item)),
+        );
+    let layerCount = 0;
+    for (const item of filteredDirectories) {
+      queue.push(item);
+      if (layers.includes(path.basename(item))) {
+        layerCount++;
+      }
+    }
+    if (layerCount > maxLayersCount) {
+      maxLayersCount = layerCount;
+      foldersWithMaxLayers = [currentDirectory];
+    } else if (layerCount === maxLayersCount) {
+      foldersWithMaxLayers.push(currentDirectory);
+    }
+  }
+  if (maxLayersCount === 0) {
+    return cwd;
+  }
+  if (foldersWithMaxLayers.length === 1) {
+    return foldersWithMaxLayers[0];
+  }
+  return foldersWithMaxLayers;
+}
+
+// src/constants.ts
+var what = process.argv[2];
+var sliceName = process.argv[3];
+var args = process.argv;
+var slices = {
+  e: "entities",
+  f: "features",
+  w: "widgets",
+  s: "shared",
+  entity: "entities",
+  feature: "features",
+  widget: "widgets",
+  shared: "shared",
+  p: "pages",
+};
+var fsdRoot = await detectFsdRoot();
+if (Array.isArray(fsdRoot)) {
+  fsdRoot = fsdRoot[0];
+} else if (!fsdRoot.split("/").includes("src")) {
+  fsdRoot = `${fsdRoot}/src`;
+}
 
 // src/helpers.ts
+import fs2 from "node:fs";
 var toPascalCase = (sliceName2) => {
   const arr = sliceName2.split("-");
   let result = "";
@@ -23,6 +122,20 @@ var toCamelCase = (kebabCaseString) => {
 };
 var toKebabCase = (inputString) => {
   return inputString.replace(/([a-z])([A-Z])/g, "$1-$2").toLowerCase();
+};
+var sliceExists = (path2) => {
+  console.log(`Slice exist: ${path2} - ${fs2.existsSync(path2)}`);
+  return fs2.existsSync(path2);
+};
+var deleteAll = () => {
+  const layers2 = Object.values(slices);
+  layers2.forEach((layer) => {
+    const path2 = `${fsdRoot}/${layer}`;
+    if (sliceExists(path2)) {
+      console.log(`Deleting: ${path2}`);
+      fs2.rmSync(path2, { recursive: true });
+    }
+  });
 };
 
 // src/templates.ts
@@ -109,84 +222,8 @@ export type T${toPascalCase(sliceName2)} = {
 `;
 };
 
-// src/detect-root.ts
-import * as fs from "fs/promises";
-import * as path from "path";
-import simpleGit from "simple-git";
-var layers = ["app", "pages", "widgets", "features", "entities", "shared"];
-var defaultIgnoredFolders = ["node_modules", ".git", "dist", "build"];
-async function getLayersCountInFolder(folderPath) {
-  const files = await fs.readdir(folderPath, { withFileTypes: true });
-  return files
-    .filter((file) => file.isDirectory())
-    .map((file) => path.join(folderPath, file.name))
-    .filter((file) => layers.includes(path.basename(file))).length;
-}
-async function filterIgnoredFolders(folders) {
-  if (folders.length === 0) {
-    return [];
-  }
-  const git = simpleGit();
-  const ignoredByGit = (await git.checkIgnore(folders)).map((folder) =>
-    path.normalize(folder.slice(1, -1)),
-  );
-  const filteredByGit = folders.filter(
-    (folder) => !ignoredByGit.includes(folder),
-  );
-  const filteredByDefaults = filteredByGit.filter(
-    (folder) => !defaultIgnoredFolders.includes(path.basename(folder)),
-  );
-  return filteredByDefaults;
-}
-async function detectFsdRoot() {
-  const cwd = path.resolve(process.cwd());
-  const cwdLayersCount = await getLayersCountInFolder(cwd);
-  if (cwdLayersCount >= 2) {
-    return cwd;
-  }
-  const git = simpleGit();
-  const isGitRepo = await git.checkIsRepo();
-  const queue = [cwd];
-  let maxLayersCount = 0;
-  let foldersWithMaxLayers = [];
-  while (queue.length > 0) {
-    const currentDirectory = queue.shift();
-    const directoryContent = await fs.readdir(currentDirectory, {
-      withFileTypes: true,
-    });
-    const directories = directoryContent
-      .filter((item) => item.isDirectory())
-      .map((item) => path.join(currentDirectory, item.name));
-    const filteredDirectories = isGitRepo
-      ? await filterIgnoredFolders(directories)
-      : directories.filter(
-          (item) => !defaultIgnoredFolders.includes(path.basename(item)),
-        );
-    let layerCount = 0;
-    for (const item of filteredDirectories) {
-      queue.push(item);
-      if (layers.includes(path.basename(item))) {
-        layerCount++;
-      }
-    }
-    if (layerCount > maxLayersCount) {
-      maxLayersCount = layerCount;
-      foldersWithMaxLayers = [currentDirectory];
-    } else if (layerCount === maxLayersCount) {
-      foldersWithMaxLayers.push(currentDirectory);
-    }
-  }
-  if (maxLayersCount === 0) {
-    return cwd;
-  }
-  if (foldersWithMaxLayers.length === 1) {
-    return foldersWithMaxLayers[0];
-  }
-  return foldersWithMaxLayers;
-}
-
 // src/update-imports.ts
-import fs2 from "node:fs";
+import fs3 from "node:fs";
 import { extname } from "node:path";
 var updateIndexFile = (path2, sliceName2, fsdRoot2) => {
   let indexPath = "";
@@ -201,8 +238,8 @@ var updateIndexFile = (path2, sliceName2, fsdRoot2) => {
 };
 var updateIfPagetOrSegment = (indexPath, sliceName2, append = "") => {
   console.log(`Updating IndexPath: ${indexPath}`);
-  if (fs2.existsSync(indexPath)) {
-    fs2.readFile(indexPath, "utf-8", (err, data) => {
+  if (fs3.existsSync(indexPath)) {
+    fs3.readFile(indexPath, "utf-8", (err, data) => {
       if (err) {
         console.error("Error reading index.ts:", err);
         return;
@@ -219,11 +256,11 @@ ${dynamicImport}`,
         /export\s*\{([^}]+)\}\s*;/g,
         `export {$1${dynamicExport}};`,
       );
-      fs2.writeFileSync(indexPath, updatedExports);
+      fs3.writeFileSync(indexPath, updatedExports);
     });
   } else {
     if (extname(indexPath) === "") {
-      fs2.mkdirSync(indexPath, { recursive: true });
+      fs3.mkdirSync(indexPath, { recursive: true });
       console.log(
         `${indexPath} directory exists or has been created successfully.`,
       );
@@ -232,7 +269,7 @@ ${dynamicImport}`,
         sliceName2,
       )}${append} from './${toKebabCase(sliceName2)}';
 export { ${toPascalCase(sliceName2)}${append} };`;
-      fs2.writeFile(indexPath, dynamicImport, { flag: "wx" }, function (err) {
+      fs3.writeFile(indexPath, dynamicImport, { flag: "wx" }, function (err) {
         if (err) throw err;
         console.log("It's saved!");
       });
@@ -242,35 +279,14 @@ export { ${toPascalCase(sliceName2)}${append} };`;
   }
 };
 
-// src/constants.ts
-var what = process.argv[2];
-var sliceName = process.argv[3];
-var args = process.argv;
-var slices = {
-  e: "entities",
-  f: "features",
-  w: "widgets",
-  s: "shared",
-  entity: "entities",
-  feature: "features",
-  widget: "widgets",
-  shared: "shared",
-};
-
 // src/generators.ts
-var fsdRoot = await detectFsdRoot();
-if (Array.isArray(fsdRoot)) {
-  fsdRoot = fsdRoot[0];
-} else if (!fsdRoot.split("/").includes("src")) {
-  fsdRoot = `${fsdRoot}/src`;
-}
 var generateEntity = async (sliceName2, args2 = null) => {
   const entityPath = join2(
     fsdRoot.toString(),
     "entities",
     toKebabCase(sliceName2),
   );
-  await fs3.mkdir(entityPath, { recursive: true });
+  await fs4.mkdir(entityPath, { recursive: true });
   if (Array.isArray(args2) && args2.includes("-s")) {
     const allowedSlices = ["ui", "api", "models", "stores"];
     const slicesType1 = allowedSlices.filter((slice) => slice !== "ui");
@@ -279,8 +295,8 @@ var generateEntity = async (sliceName2, args2 = null) => {
       args2[args2.length - 1].split(",").map(async (subfolder) => {
         if (allowedSlices.includes(subfolder)) {
           const subfolderPath = join2(entityPath, subfolder);
-          await fs3.mkdir(subfolderPath);
-          await fs3.writeFile(join2(subfolderPath, "index.ts"), "");
+          await fs4.mkdir(subfolderPath);
+          await fs4.writeFile(join2(subfolderPath, "index.ts"), "");
           if (slicesType1.includes(subfolder)) {
             await generateSlice(sliceName2, entityPath, subfolder);
           } else {
@@ -295,7 +311,7 @@ var generateEntity = async (sliceName2, args2 = null) => {
     await Promise.all(
       ["ui", "api", "models", "stores"].map(async (subfolder) => {
         const subfolderPath = join2(entityPath, subfolder);
-        return await fs3
+        return await fs4
           .access(subfolderPath)
           .then(() => `export * from './${subfolder}';`)
           .catch(() => "");
@@ -304,46 +320,46 @@ var generateEntity = async (sliceName2, args2 = null) => {
   )
     .filter(Boolean)
     .join("\n");
-  await fs3.writeFile(indexPath, imports);
+  await fs4.writeFile(indexPath, imports);
   updateIndexFile("entities", sliceName2, fsdRoot.toString());
 };
 var generateSlice = async (sliceName2, path2, type) => {
   const slicePath = join2(path2, type);
-  await fs3.mkdir(slicePath, { recursive: true });
+  await fs4.mkdir(slicePath, { recursive: true });
   const templates = {
     api: apiTemplate(sliceName2),
     models: typeTemplate(sliceName2),
   };
   const template = `${templates[type]}`;
-  await fs3.writeFile(join2(slicePath, `${sliceName2}.${type}.ts`), template);
+  await fs4.writeFile(join2(slicePath, `${sliceName2}.${type}.ts`), template);
   const indexPath = join2(slicePath, "index.ts");
-  const imports = await fs3.readFile(indexPath, "utf-8").catch(() => "");
+  const imports = await fs4.readFile(indexPath, "utf-8").catch(() => "");
   const newIndexContent = `${imports}
 export * from './${sliceName2}.${type}';
 `;
-  await fs3.writeFile(indexPath, newIndexContent);
+  await fs4.writeFile(indexPath, newIndexContent);
 };
 var generateUi = async (sliceName2, path2) => {
   const uiFolderPath = join2(path2, "ui");
   const sliceFolderPath = join2(uiFolderPath, sliceName2);
-  await fs3.mkdir(uiFolderPath, { recursive: true });
-  await fs3.mkdir(sliceFolderPath);
+  await fs4.mkdir(uiFolderPath, { recursive: true });
+  await fs4.mkdir(sliceFolderPath);
   const template = uiTemplate(sliceName2);
-  await fs3.writeFile(join2(sliceFolderPath, "index.tsx"), template);
+  await fs4.writeFile(join2(sliceFolderPath, "index.tsx"), template);
   const indexPath = join2(uiFolderPath, "index.ts");
-  const imports = await fs3.readFile(indexPath, "utf-8").catch(() => "");
+  const imports = await fs4.readFile(indexPath, "utf-8").catch(() => "");
   const newIndexContent = `${imports}
 export * from './${sliceName2}';
 `;
-  await fs3.writeFile(indexPath, newIndexContent);
+  await fs4.writeFile(indexPath, newIndexContent);
 };
 var generateFeatureOrWidget = async (sliceName2, what2) => {
   const featureFolder = join2(fsdRoot.toString(), slices[what2]);
   const sliceFolderPath = join2(featureFolder, sliceName2);
-  await fs3.mkdir(featureFolder, { recursive: true });
-  await fs3.mkdir(sliceFolderPath);
+  await fs4.mkdir(featureFolder, { recursive: true });
+  await fs4.mkdir(sliceFolderPath);
   const template = uiTemplate(sliceName2);
-  await fs3.writeFile(join2(sliceFolderPath, "index.tsx"), template);
+  await fs4.writeFile(join2(sliceFolderPath, "index.tsx"), template);
   updateIndexFile(slices[what2], sliceName2, fsdRoot.toString());
 };
 var generatePage = async (sliceName2) => {
@@ -353,29 +369,26 @@ var generatePage = async (sliceName2) => {
     toKebabCase(sliceName2),
     "index.tsx",
   );
-  if (await sliceExists(pagePath)) {
+  if (sliceExists(pagePath)) {
     return;
   }
-  await fs3.mkdir(join2(fsdRoot.toString(), "pages", sliceName2), {
+  await fs4.mkdir(join2(fsdRoot.toString(), "pages", sliceName2), {
     recursive: true,
   });
-  await fs3.writeFile(pagePath, pageTemplate(sliceName2), "utf-8");
+  await fs4.writeFile(pagePath, pageTemplate(sliceName2), "utf-8");
   updateIndexFile("pages", `${toPascalCase(sliceName2)}`, fsdRoot.toString());
   console.log(
     `Page '${toPascalCase(sliceName2)}Index' generated at ${pagePath}`,
   );
 };
-var sliceExists = async (path2) => {
-  try {
-    await fs3.access(path2);
-    return true;
-  } catch (error) {
-    return false;
-  }
-};
 
 // src/index.ts
 if (!what) process2.exit(1);
+if (what === "deleteAll") {
+  deleteAll();
+  console.log("Deleted all src directories!");
+  process2.exit(1);
+}
 if (!sliceName) {
   console.error("Please provide a name for the slice.");
   process2.exit(1);

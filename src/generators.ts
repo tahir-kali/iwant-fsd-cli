@@ -7,16 +7,10 @@ import {
   uiTemplate,
 } from "./templates.js";
 import { sliceExists, toKebabCase, toPascalCase } from "./helpers.js";
-import { detectFsdRoot } from "./detect-root.js";
-import { updateIndexFile } from "./update-imports.js";
-import { slices } from "./constants.js";
 
-let fsdRoot = await detectFsdRoot();
-if (Array.isArray(fsdRoot)) {
-  fsdRoot = fsdRoot[0];
-} else if (!fsdRoot.split("/").includes("src")) {
-  fsdRoot = `${fsdRoot}/src`;
-}
+import { updateIndexFile } from "./update-imports.js";
+import { fsdRoot, slices } from "./constants.js";
+
 export const generateEntity = async (
   sliceName: string,
   args: string | string[] | null = null,
@@ -116,7 +110,7 @@ export const generatePage = async (sliceName: string) => {
     toKebabCase(sliceName),
     "index.tsx",
   );
-  if (await sliceExists(pagePath)) {
+  if (sliceExists(pagePath)) {
     return;
   }
   await fs.mkdir(join(fsdRoot.toString(), "pages", sliceName), {
