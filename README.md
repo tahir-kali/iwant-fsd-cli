@@ -15,5 +15,15 @@ iwant [entity] [page] [widget] [PageName] -s [scaffold-options]
 ## Example
 
 ```sh
-iwant page homePage -s f,e,w
+iwant entity create-user -s ui,api,models
+```
+```sh
+iwant feature create-user
+```
+
+```sh
+iwant widget create-user
+```
+```sh
+iwant page login
 ```
