@@ -104,22 +104,6 @@ export type T${toPascalCase(sliceName2)} = {
 };
 `;
 };
-var sliceTemplate = (sliceName2, layer = null) => {
-  if (layer === null) return uiTemplate(sliceName2);
-  let result = "";
-  switch (layer) {
-    case "ui":
-      result = uiTemplate(sliceName2);
-      break;
-    case "api":
-      result = apiTemplate(sliceName2);
-      break;
-    case "types":
-      result = typeTemplate(sliceName2);
-      break;
-  }
-  return result;
-};
 
 // src/detect-root.ts
 import * as fs from "fs/promises";
@@ -210,9 +194,7 @@ var updateIndexFile = (path2, sliceName2, fsdRoot2) => {
   } else {
     indexPath = `src/${path2}/index.ts`;
   }
-  if (["pages", "ui"].includes(path2)) {
-    updateIfPagetOrSegment(indexPath, sliceName2);
-  }
+  updateIfPagetOrSegment(indexPath, sliceName2);
 };
 var updateIfPagetOrSegment = (indexPath, sliceName2) => {
   if (fs2.existsSync(indexPath)) {
@@ -256,7 +238,10 @@ export { ${sliceName2} };`;
   }
 };
 
-// src/generators.ts
+// src/constants.ts
+var what = process.argv[2];
+var sliceName = process.argv[3];
+var args = process.argv;
 var slices = {
   e: "entities",
   f: "features",
@@ -267,14 +252,94 @@ var slices = {
   widget: "widgets",
   shared: "shared",
 };
+
+// src/generators.ts
 var fsdRoot = await detectFsdRoot();
 if (Array.isArray(fsdRoot)) {
   fsdRoot = fsdRoot[0];
 } else if (!fsdRoot.split("/").includes("src")) {
   fsdRoot = `${fsdRoot}/src`;
 }
+var createEntity = (sliceName2, args2 = null) => {
+  const entityPath = join2(`${fsdRoot}/entities`, toKebabCase(sliceName2));
+  fs3.mkdirSync(entityPath, { recursive: true });
+  if (Array.isArray(args2) && args2.includes("-s")) {
+    const allowedSlices = ["ui", "api", "models", "stores"];
+    const slicesType1 = allowedSlices.filter((slice) => slice !== "ui");
+    console.log(`Args: ${JSON.stringify(args2)}`);
+    args2[args2.length - 1].split(",").forEach((subfolder) => {
+      if (allowedSlices.includes(subfolder)) {
+        const subfolderPath = join2(entityPath, subfolder);
+        fs3.mkdirSync(subfolderPath);
+        fs3.writeFileSync(join2(subfolderPath, "index.ts"), "");
+        if (slicesType1.includes(subfolder)) {
+          createSlice(sliceName2, entityPath, subfolder);
+        } else {
+          createUi(sliceName2, entityPath);
+        }
+      }
+    });
+  }
+  const indexPath = join2(entityPath, "index.ts");
+  const imports = ["ui", "api", "models", "stores"].filter((subfolder) => {
+    const subfolderPath = join2(entityPath, subfolder);
+    return fs3.existsSync(subfolderPath);
+  });
+  fs3.writeFileSync(
+    indexPath,
+    imports.map((subfolder) => `export * from './${subfolder}';`).join("\n"),
+  );
+};
+var createSlice = (sliceName2, path2, type) => {
+  const slicePath = join2(path2, type);
+  if (!fs3.existsSync(slicePath)) {
+    fs3.mkdirSync(slicePath);
+  }
+  const templates = {
+    api: apiTemplate(sliceName2),
+    models: typeTemplate(sliceName2),
+  };
+  const template = `${templates[type]}`;
+  fs3.writeFileSync(join2(slicePath, `${sliceName2}.${type}.ts`), template);
+  const indexPath = join2(slicePath, "index.ts");
+  const imports = fs3.existsSync(indexPath)
+    ? fs3.readFileSync(indexPath, "utf-8")
+    : "";
+  const newIndexContent = `${imports}
+export * from './${sliceName2}.${type}';
+`;
+  fs3.writeFileSync(indexPath, newIndexContent);
+};
+var createUi = (sliceName2, path2) => {
+  const uiFolderPath = join2(path2, "ui");
+  const sliceFolderPath = join2(uiFolderPath, sliceName2);
+  if (!fs3.existsSync(uiFolderPath)) {
+    fs3.mkdirSync(uiFolderPath);
+  }
+  fs3.mkdirSync(sliceFolderPath);
+  const template = uiTemplate(sliceName2);
+  fs3.writeFileSync(join2(sliceFolderPath, "index.tsx"), template);
+  const indexPath = join2(uiFolderPath, "index.ts");
+  const imports = fs3.existsSync(indexPath)
+    ? fs3.readFileSync(indexPath, "utf-8")
+    : "";
+  const newIndexContent = `${imports}
+export * from './${sliceName2}';
+`;
+  fs3.writeFileSync(indexPath, newIndexContent);
+};
+var createFeatureOrWidget = (sliceName2, what2) => {
+  const featureFolder = join2(fsdRoot.toString(), slices[what2]);
+  const sliceFolderPath = join2(featureFolder, sliceName2);
+  if (!fs3.existsSync(featureFolder)) {
+    fs3.mkdirSync(featureFolder);
+  }
+  fs3.mkdirSync(sliceFolderPath);
+  const template = uiTemplate(sliceName2);
+  fs3.writeFileSync(join2(sliceFolderPath, "index.tsx"), template);
+  updateIndexFile(featureFolder, sliceName2, fsdRoot.toString());
+};
 var generatePage = (sliceName2) => {
-  console.log(`Root: ${fsdRoot}`);
   const pagePath = join2(`${fsdRoot}`, "pages", sliceName2, "index.tsx");
   if (sliceExists(pagePath)) {
     return;
@@ -290,62 +355,14 @@ var sliceExists = (path2) => {
   }
   return false;
 };
-var generateSegments = (sliceName2, segments2, args2 = null) => {
-  segments2[0].split(",").forEach((flag) => {
-    if (
-      Object.values(slices).includes(flag) ||
-      Object.keys(slices).includes(flag)
-    ) {
-      createSegment(slices[flag], sliceName2, null, args2);
-    }
-  });
-  console.log(`Files for '${sliceName2}' generated successfully.`);
-};
-var createSegment = (slice, sliceName2, layer, args2 = null) => {
-  let layerPath = "";
-  if (layer !== null) {
-    layerPath = join2(`${slice}/${sliceName2}/${layer}`);
-  } else {
-    layerPath = join2(`${slice}/${sliceName2}`);
-  }
-  layerPath = join2(`${fsdRoot}`, layerPath);
-  fs3.mkdirSync(layerPath, { recursive: true });
-  const slicePath = join2(
-    layerPath,
-    ["ui", null].includes(layer) ? `index.tsx` : "index.ts",
-  );
-  if (sliceExists(slicePath)) {
-    return;
-  }
-  fs3.writeFileSync(slicePath, sliceTemplate(sliceName2, layer), "utf-8");
-  if (layer === null) {
-    updateIndexFile(`${slice}`, toPascalCase(sliceName2), fsdRoot.toString());
-  }
-  if (args2 && args2.length && args2.includes("-s")) {
-    args2[args2.length - 1].split(",").forEach((segment) => {
-      createSegment(slice, sliceName2, segment, null);
-    });
-  }
-  console.log(
-    `Entity for '${toPascalCase(sliceName2)}' generated at ${slicePath}`,
-  );
-};
 
 // src/index.ts
-var what = process2.argv[2];
-var sliceName = process2.argv[3];
-var args = process2.argv;
-var segments = process2.argv.slice(5);
 if (!what) process2.exit(1);
 if (!sliceName) {
   console.error("Please provide a name for the slice.");
   process2.exit(1);
 }
-if (what === "page") {
-  generatePage(sliceName);
-  if (args.length && args.includes("-s") && segments.length) {
-    generateSegments(sliceName, segments);
-  }
-} else {
-  generateSegments(sliceName, [...what], args);
-}
+if (what === "page") generatePage(sliceName);
+else if (what === "entity") createEntity(sliceName, args);
+else if (["feature", "widget"].includes(what))
+  createFeatureOrWidget(sliceName, what);

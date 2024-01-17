@@ -12,9 +12,9 @@ export const updateIndexFile = (
   } else {
     indexPath = `src/${path}/index.ts`; // Update the path to your actual index.ts file
   }
-  if (["pages", "ui"].includes(path)) {
-    updateIfPagetOrSegment(indexPath, sliceName);
-  }
+  // if (["pages", "ui"].includes(path)) {
+  updateIfPagetOrSegment(indexPath, sliceName);
+  // }
 };
 
 const updateIfPagetOrSegment = (indexPath: string, sliceName: string) => {

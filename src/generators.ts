@@ -1,19 +1,15 @@
-import { sliceTemplate, pageTemplate } from "./templates.js";
-import { toPascalCase } from "./helpers.js";
+import {
+  apiTemplate,
+  pageTemplate,
+  typeTemplate,
+  uiTemplate,
+} from "./templates.js";
+import { toKebabCase, toPascalCase } from "./helpers.js";
 import { detectFsdRoot } from "./detect-root.js";
 import fs from "node:fs";
 import { join } from "node:path";
 import { updateIndexFile } from "./update-imports.js";
-const slices: { [key: string]: string } = {
-  e: "entities",
-  f: "features",
-  w: "widgets",
-  s: "shared",
-  entity: "entities",
-  feature: "features",
-  widget: "widgets",
-  shared: "shared",
-};
+import { slices } from "./constants.js";
 
 let fsdRoot = await detectFsdRoot();
 if (Array.isArray(fsdRoot)) {
@@ -21,8 +17,98 @@ if (Array.isArray(fsdRoot)) {
 } else if (!fsdRoot.split("/").includes("src")) {
   fsdRoot = `${fsdRoot}/src`;
 }
+
+export const createPage = () => {};
+export const createEntity = (
+  sliceName: string,
+  args: string | string[] | undefined | null = null,
+) => {
+  const entityPath = join(`${fsdRoot}/entities`, toKebabCase(sliceName));
+  fs.mkdirSync(entityPath, { recursive: true });
+
+  if (Array.isArray(args) && args.includes("-s")) {
+    const allowedSlices = ["ui", "api", "models", "stores"];
+    const slicesType1 = allowedSlices.filter((slice) => slice !== "ui");
+    console.log(`Args: ${JSON.stringify(args)}`);
+    args[args.length - 1].split(",").forEach((subfolder) => {
+      if (allowedSlices.includes(subfolder)) {
+        const subfolderPath = join(entityPath, subfolder);
+        fs.mkdirSync(subfolderPath);
+        fs.writeFileSync(join(subfolderPath, "index.ts"), "");
+        if (slicesType1.includes(subfolder)) {
+          createSlice(sliceName, entityPath, subfolder);
+        } else {
+          createUi(sliceName, entityPath);
+        }
+      }
+    });
+  }
+
+  const indexPath = join(entityPath, "index.ts");
+  const imports = ["ui", "api", "models", "stores"].filter((subfolder) => {
+    const subfolderPath = join(entityPath, subfolder);
+    return fs.existsSync(subfolderPath);
+  });
+
+  fs.writeFileSync(
+    indexPath,
+    imports.map((subfolder) => `export * from './${subfolder}';`).join("\n"),
+  );
+};
+export const createSlice = (sliceName: string, path: string, type: string) => {
+  const slicePath = join(path, type);
+
+  if (!fs.existsSync(slicePath)) {
+    fs.mkdirSync(slicePath);
+  }
+  const templates: { [key: string]: string } = {
+    api: apiTemplate(sliceName),
+    models: typeTemplate(sliceName),
+  };
+
+  const template = `${templates[type]}`;
+  fs.writeFileSync(join(slicePath, `${sliceName}.${type}.ts`), template);
+
+  const indexPath = join(slicePath, "index.ts");
+  const imports = fs.existsSync(indexPath)
+    ? fs.readFileSync(indexPath, "utf-8")
+    : "";
+  const newIndexContent = `${imports}\nexport * from './${sliceName}.${type}';\n`;
+  fs.writeFileSync(indexPath, newIndexContent);
+};
+export const createUi = (sliceName: string, path: string) => {
+  const uiFolderPath = join(path, "ui");
+  const sliceFolderPath = join(uiFolderPath, sliceName);
+
+  if (!fs.existsSync(uiFolderPath)) {
+    fs.mkdirSync(uiFolderPath);
+  }
+  fs.mkdirSync(sliceFolderPath);
+  const template = uiTemplate(sliceName);
+  fs.writeFileSync(join(sliceFolderPath, "index.tsx"), template);
+  const indexPath = join(uiFolderPath, "index.ts");
+  const imports = fs.existsSync(indexPath)
+    ? fs.readFileSync(indexPath, "utf-8")
+    : "";
+  const newIndexContent = `${imports}\nexport * from './${sliceName}';\n`;
+  fs.writeFileSync(indexPath, newIndexContent);
+};
+export const createFeatureOrWidget = (sliceName: string, what: string) => {
+  // Create folder structure & feature,widget....
+  const featureFolder = join(fsdRoot.toString(), slices[what]);
+  const sliceFolderPath = join(featureFolder, sliceName);
+
+  if (!fs.existsSync(featureFolder)) {
+    fs.mkdirSync(featureFolder);
+  }
+
+  fs.mkdirSync(sliceFolderPath);
+  const template = uiTemplate(sliceName);
+  fs.writeFileSync(join(sliceFolderPath, "index.tsx"), template);
+  updateIndexFile(featureFolder, sliceName, fsdRoot.toString());
+};
+
 export const generatePage = (sliceName: string) => {
-  console.log(`Root: ${fsdRoot}`);
   const pagePath = join(`${fsdRoot}`, "pages", sliceName, "index.tsx");
   if (sliceExists(pagePath)) {
     return;
@@ -37,59 +123,4 @@ const sliceExists = (path: string) => {
     return true;
   }
   return false;
-};
-export const generateSegments = (
-  sliceName: string,
-  segments: string[],
-  args: string[] | null = null,
-) => {
-  segments[0].split(",").forEach((flag: string) => {
-    if (
-      Object.values(slices).includes(flag) ||
-      Object.keys(slices).includes(flag)
-    ) {
-      createSegment(slices[flag], sliceName, null, args);
-    }
-  });
-  console.log(`Files for '${sliceName}' generated successfully.`);
-};
-const createSegment = (
-  slice: string,
-  sliceName: string,
-  layer: string | null,
-  args: string[] | null = null,
-) => {
-  let layerPath = "";
-  if (layer !== null) {
-    layerPath = join(`${slice}/${sliceName}/${layer}`);
-  } else {
-    layerPath = join(`${slice}/${sliceName}`);
-  }
-  layerPath = join(`${fsdRoot}`, layerPath);
-  fs.mkdirSync(layerPath, { recursive: true });
-
-  const slicePath = join(
-    layerPath,
-    ["ui", null].includes(layer) ? `index.tsx` : "index.ts",
-  );
-
-  if (sliceExists(slicePath)) {
-    return;
-  }
-
-  fs.writeFileSync(slicePath, sliceTemplate(sliceName, layer), "utf-8");
-
-  if (layer === null) {
-    updateIndexFile(`${slice}`, toPascalCase(sliceName), fsdRoot.toString());
-  }
-
-  if (args && args.length && args.includes("-s")) {
-    args[args.length - 1].split(",").forEach((segment) => {
-      createSegment(slice, sliceName, segment, null);
-    });
-  }
-
-  console.log(
-    `Entity for '${toPascalCase(sliceName)}' generated at ${slicePath}`,
-  );
 };
