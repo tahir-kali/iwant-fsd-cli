@@ -253,7 +253,7 @@ var updateIfPagetOrSegment = (indexPath, sliceName2, append = "") => {
         console.error("Error reading index.ts:", err);
         return;
       }
-      const dynamicImport = `import * as ${toPascalCase(sliceName2)}${append} from './${toKebabCase(sliceName2)}';
+      const dynamicImport = `import ${toPascalCase(sliceName2)}${append} from './${toKebabCase(sliceName2)}';
 `;
       const updatedContent = data.replace(
         /(import \* as [^;]+;)/,
@@ -274,7 +274,7 @@ ${dynamicImport}`,
         `${indexPath} directory exists or has been created successfully.`,
       );
     } else {
-      const dynamicImport = `import * as ${toPascalCase(
+      const dynamicImport = `import ${toPascalCase(
         sliceName2,
       )}${append} from './${toKebabCase(sliceName2)}';
 export { ${toPascalCase(sliceName2)}${append} };`;
@@ -347,7 +347,7 @@ var generateEntity = async (sliceName2, args2 = null) => {
   const indexPath = join2(entityPath, "index.ts");
   const imports = (
     await Promise.all(
-      ["ui", "api", "models", "stores"].map(async (subfolder) => {
+      allowedSlices.map(async (subfolder) => {
         const subfolderPath = join2(entityPath, subfolder);
         return await fs4
           .access(subfolderPath)

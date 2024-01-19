@@ -31,7 +31,7 @@ const updateIfPagetOrSegment = (
         return;
       }
       // Add the dynamic import statement
-      const dynamicImport = `import * as ${toPascalCase(sliceName)}${append} from './${toKebabCase(sliceName)}';\n`;
+      const dynamicImport = `import ${toPascalCase(sliceName)}${append} from './${toKebabCase(sliceName)}';\n`;
       const updatedContent = data.replace(
         /(import \* as [^;]+;)/,
         `$1\n${dynamicImport}`,
@@ -56,7 +56,7 @@ const updateIfPagetOrSegment = (
       );
     } else {
       // If the file or directory doesn't exist, generate default content
-      const dynamicImport = `import * as ${toPascalCase(
+      const dynamicImport = `import ${toPascalCase(
         sliceName,
       )}${append} from './${toKebabCase(sliceName)}';\nexport { ${toPascalCase(sliceName)}${append} };`;
 

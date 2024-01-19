@@ -72,7 +72,7 @@ export const generateEntity = async (
   const indexPath = join(entityPath, "index.ts");
   const imports = (
     await Promise.all(
-      ["ui", "api", "models", "stores"].map(async (subfolder) => {
+      allowedSlices.map(async (subfolder) => {
         const subfolderPath = join(entityPath, subfolder);
         return await fs
           .access(subfolderPath)
